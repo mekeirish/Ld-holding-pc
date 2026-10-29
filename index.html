@@ -1746,7 +1746,6 @@
 
       // ↓↓↓ PARTIE 2 : helpers UI + rendu des sections ↓↓↓
       /* RENDU SUITE DANS LA PARTIE 2 */
-
 // ===== Helpers UI =====
 const Card = ({ children, className = '', title, subtitle, action }) =>
   React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl p-6 ${className}` },
@@ -1802,6 +1801,16 @@ const NavItem = ({ section, icon, children }) =>
     React.createElement("span", { className: "text-sm" }, children)
   );
 
+// NOUVEAU : lien retour réutilisable (breadcrumb section)
+const BackToDashboard = () =>
+  React.createElement("button", {
+    onClick: () => setAdminSection('home'),
+    className: `inline-flex items-center gap-1 text-sm text-[#9CA3AF] hover:text-white transition -mb-1`
+  },
+    React.createElement("span", { className: "text-base" }, "←"),
+    React.createElement("span", null, "Tableau de bord")
+  );
+
 const Skeleton = ({ h = 'h-6', w = 'w-full', className = '' }) =>
   React.createElement("div", { className: `${h} ${w} bg-[#3A4A5F] rounded-lg skeleton-pulse ${className}` });
 
@@ -1841,7 +1850,6 @@ const MobileNav = () => {
   );
 };
 
-// Menu "Plus" en mobile
 const MobileMoreMenu = () => {
   if (!mobileNavOpen) return null;
   const items = [
@@ -1916,29 +1924,45 @@ const renderSidebar = () =>
     )
   );
 
-// ===== Header admin =====
+// ===== Header (NOUVEAU : bouton retour pour sections admin non-home) =====
 const renderHeader = () =>
   React.createElement("header", { className: `h-16 flex-shrink-0 flex items-center justify-between px-4 lg:px-6 border-b border-[${THEME.colors.border}] bg-[#0A1622] sticky top-0 z-30` },
-    React.createElement("div", {
-      className: "flex items-center gap-3 lg:hidden cursor-pointer select-none",
-      onClick: handleLogoClick,
-      onMouseDown: startLongPress,
-      onMouseUp: cancelLongPress,
-      onMouseLeave: cancelLongPress
-    },
-      logoUrl ? React.createElement("img", { src: logoUrl, alt: "Logo", className: "h-8" })
-      : React.createElement("span", { className: "text-[#E8F04F] font-bold" }, appTitle)
-    ),
-    React.createElement("div", { className: "hidden lg:block" },
-      React.createElement("h1", { className: "text-white font-semibold text-lg" },
-        isAdmin
-          ? ({ home: 'Tableau de bord', brands: 'Marques', products: 'Produits & Données', orders: 'Commandes', clients: 'Clients', stats: 'Statistiques', settings: 'Paramètres' })[adminSection] || 'Admin'
-          : currentView === DICT.VIEW.DETAIL
-            ? selectedBrand ? selectedBrand.name : 'Produits'
-            : 'Catalogue'
+    React.createElement("div", { className: "flex items-center gap-2 flex-1 min-w-0" },
+      // ⬇⬇⬇ NOUVEAU : bouton retour (admin uniquement, hors accueil)
+      isAdmin && adminSection !== 'home' && React.createElement("button", {
+        onClick: () => setAdminSection('home'),
+        className: `flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[#9CA3AF] hover:text-white hover:bg-[#1E2F44] transition flex-shrink-0`,
+        title: "Retour au tableau de bord"
+      },
+        React.createElement("span", { className: "text-lg leading-none" }, "←"),
+        React.createElement("span", { className: "hidden md:inline text-sm" }, "Retour")
+      ),
+      // ⬆⬆⬆ FIN NOUVEAU
+      // Logo mobile (existant)
+      React.createElement("div", {
+        className: "flex items-center gap-3 lg:hidden cursor-pointer select-none flex-shrink-0",
+        onClick: handleLogoClick,
+        onMouseDown: startLongPress,
+        onMouseUp: cancelLongPress,
+        onMouseLeave: cancelLongPress,
+        title: "Appui long pour vous déconnecter"
+      },
+        logoUrl
+          ? React.createElement("img", { src: logoUrl, alt: "Logo", className: "h-8" })
+          : React.createElement("span", { className: "text-[#E8F04F] font-bold text-sm truncate max-w-[120px]" }, appTitle)
+      ),
+      // Titre desktop (existant)
+      React.createElement("div", { className: "hidden lg:block min-w-0" },
+        React.createElement("h1", { className: "text-white font-semibold text-lg truncate" },
+          isAdmin
+            ? ({ home: 'Tableau de bord', brands: 'Marques', products: 'Produits & Données', orders: 'Commandes', clients: 'Clients', stats: 'Statistiques', settings: 'Paramètres' })[adminSection] || 'Admin'
+            : currentView === DICT.VIEW.DETAIL
+              ? selectedBrand ? selectedBrand.name : 'Produits'
+              : 'Catalogue'
+        )
       )
     ),
-    React.createElement("div", { className: "flex items-center gap-2" },
+    React.createElement("div", { className: "flex items-center gap-2 flex-shrink-0" },
       !isAdmin && currentView === DICT.VIEW.DETAIL && React.createElement(Button, {
         variant: 'ghost', size: 'sm', onClick: goHome
       }, "← Retour"),
@@ -1953,7 +1977,7 @@ const renderHeader = () =>
     )
   );
 
-// ===== Dashboard intelligent =====
+// ===== Dashboard =====
 const renderAdminHome = () => {
   const comparison = getPeriodComparison();
   const todayOrders = getTodayOrders();
@@ -1965,40 +1989,18 @@ const renderAdminHome = () => {
   const alertsTotal = alerts.oldOrders.length + alerts.productsNoImage.length + alerts.productsZero.length + alerts.emptyBrands.length + alerts.hiddenProducts.length;
 
   return React.createElement("div", { className: "space-y-6 pb-24 lg:pb-6" },
-    // Ligne KPI principaux
     React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4" },
-      React.createElement(StatCard, {
-        label: "Commandes 7j",
-        value: comparison.thisCount,
-        trend: comparison.countChange,
-        trendLabel: `vs 7j préc. (${comparison.lastCount})`,
-        accent: true
-      }),
-      showPrices && React.createElement(StatCard, {
-        label: "Revenu 7j",
-        value: comparison.thisRev.toLocaleString() + ' DZD',
-        trend: comparison.revChange,
-        trendLabel: `vs 7j préc.`
-      }),
-      showPrices && React.createElement(StatCard, {
-        label: "Panier moyen",
-        value: Math.round(avgBasket).toLocaleString() + ' DZD',
-        sub: `sur ${orders.length} commande(s)`
-      }),
-      React.createElement(StatCard, {
-        label: "Taux de livraison",
-        value: deliveryRate.toFixed(0) + '%',
-        sub: `${orders.filter(o => o.status === 'delivered').length} livrée(s)`
-      })
+      React.createElement(StatCard, { label: "Commandes 7j", value: comparison.thisCount, trend: comparison.countChange, trendLabel: `vs 7j préc. (${comparison.lastCount})`, accent: true }),
+      showPrices && React.createElement(StatCard, { label: "Revenu 7j", value: comparison.thisRev.toLocaleString() + ' DZD', trend: comparison.revChange, trendLabel: `vs 7j préc.` }),
+      showPrices && React.createElement(StatCard, { label: "Panier moyen", value: Math.round(avgBasket).toLocaleString() + ' DZD', sub: `sur ${orders.length} commande(s)` }),
+      React.createElement(StatCard, { label: "Taux de livraison", value: deliveryRate.toFixed(0) + '%', sub: `${orders.filter(o => o.status === 'delivered').length} livrée(s)` })
     ),
-    // Ligne KPI secondaires
     React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4" },
       React.createElement(StatCard, { label: "Aujourd'hui", value: todayOrders.length, sub: "commande(s) du jour", accent: true }),
       React.createElement(StatCard, { label: "En attente", value: pendingOrders, sub: "à traiter" }),
       React.createElement(StatCard, { label: "Clients uniques", value: computeClientStats().length }),
       React.createElement(StatCard, { label: "Produits", value: totalProducts, sub: `${brands.length} marque(s)` })
     ),
-    // Graphique 7 jours + Alertes
     React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-3 gap-4" },
       React.createElement(Card, { className: "lg:col-span-2", title: "7 derniers jours", subtitle: "Commandes par jour" },
         React.createElement("div", { style: { display: 'flex', alignItems: 'flex-end', gap: 8, height: 180, paddingBottom: 8, borderBottom: '1px solid #3A4A5F' } },
@@ -2081,7 +2083,6 @@ const renderAdminHome = () => {
             )
       )
     ),
-    // Actions rapides
     React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl p-6` },
       React.createElement("h3", { className: "text-white font-semibold text-base mb-4" }, "Actions rapides"),
       React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-4 gap-3" },
@@ -2095,7 +2096,6 @@ const renderAdminHome = () => {
         React.createElement(ActionButton, { icon: '👥', label: 'Admins', onClick: openManageAdmins })
       )
     ),
-    // Dernières commandes + activité récente
     React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
       React.createElement(Card, { title: "Dernières commandes", subtitle: `${pendingOrders} en attente` },
         orders.filter(o => o.status === 'received').slice(0, 5).length === 0
@@ -2135,7 +2135,7 @@ const renderAdminHome = () => {
   );
 };
 
-// ===== Commandes (version admin améliorée) =====
+// ===== Commandes (admin) =====
 const renderAdminOrders = () => {
   const base = orders.filter(o => o.status === orderTab);
   let filtered = filterOrdersByPeriod(base, ordersPeriod);
@@ -2149,17 +2149,12 @@ const renderAdminOrders = () => {
   ];
 
   const allSelected = filtered.length > 0 && filtered.every(o => selectedOrders.includes(o.id));
-  const toggleAll = () => {
-    if (allSelected) setSelectedOrders([]);
-    else setSelectedOrders(filtered.map(o => o.id));
-  };
-  const toggleOne = (id) => {
-    if (selectedOrders.includes(id)) setSelectedOrders(selectedOrders.filter(x => x !== id));
-    else setSelectedOrders([...selectedOrders, id]);
-  };
+  const toggleAll = () => { if (allSelected) setSelectedOrders([]); else setSelectedOrders(filtered.map(o => o.id)); };
+  const toggleOne = (id) => { if (selectedOrders.includes(id)) setSelectedOrders(selectedOrders.filter(x => x !== id)); else setSelectedOrders([...selectedOrders, id]); };
 
   return React.createElement("div", { className: "space-y-4 pb-24 lg:pb-6" },
-    // Header
+    // NOUVEAU : lien retour
+    React.createElement(BackToDashboard, null),
     React.createElement("div", { className: "flex justify-between items-start flex-wrap gap-3" },
       React.createElement("div", null,
         React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Commandes"),
@@ -2169,32 +2164,24 @@ const renderAdminOrders = () => {
         React.createElement(Button, { variant: 'secondary', size: 'sm', onClick: () => exportOrdersToExcel(filtered) }, "📤 Exporter Excel")
       )
     ),
-    // Onglets statut
     React.createElement("div", { className: `flex gap-1 border-b border-[${THEME.colors.border}] overflow-x-auto` },
       tabs.map(t => React.createElement("button", {
         key: t.key,
         onClick: () => { setOrderTab(t.key); setExpandedOrderId(null); setSelectedOrders([]); },
         className: `px-4 py-3 text-sm font-medium transition border-b-2 -mb-px whitespace-nowrap ${
-          orderTab === t.key
-            ? 'text-[#E8F04F] border-[#E8F04F]'
-            : 'text-[#9CA3AF] border-transparent hover:text-white'
+          orderTab === t.key ? 'text-[#E8F04F] border-[#E8F04F]' : 'text-[#9CA3AF] border-transparent hover:text-white'
         }`
       }, `${t.label} (${t.count})`))
     ),
-    // Barre de recherche et filtres
     React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-xl p-3 space-y-2` },
       React.createElement("div", { className: "flex gap-2 flex-wrap" },
         React.createElement("input", {
-          type: "search",
-          placeholder: "Rechercher nom, tél, adresse, produit...",
-          "data-search-input": "orders",
-          value: ordersSearch,
-          onChange: e => setOrdersSearch(e.target.value),
+          type: "search", placeholder: "Rechercher nom, tél, adresse, produit...",
+          "data-search-input": "orders", value: ordersSearch, onChange: e => setOrdersSearch(e.target.value),
           className: `flex-1 min-w-[200px] px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm outline-none`
         }),
         React.createElement("select", {
-          value: ordersSort,
-          onChange: e => setOrdersSort(e.target.value),
+          value: ordersSort, onChange: e => setOrdersSort(e.target.value),
           className: `px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm outline-none`
         },
           React.createElement("option", { value: "date_desc" }, "Plus récentes"),
@@ -2204,8 +2191,7 @@ const renderAdminOrders = () => {
           React.createElement("option", { value: "client_asc" }, "Client A-Z")
         ),
         React.createElement("select", {
-          value: ordersPeriod,
-          onChange: e => setOrdersPeriod(e.target.value),
+          value: ordersPeriod, onChange: e => setOrdersPeriod(e.target.value),
           className: `px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm outline-none`
         },
           React.createElement("option", { value: "today" }, "Aujourd'hui"),
@@ -2214,45 +2200,32 @@ const renderAdminOrders = () => {
           React.createElement("option", { value: "all" }, "Tout")
         )
       ),
-      // Actions groupées
       selectedOrders.length > 0 && React.createElement("div", { className: `flex items-center gap-2 p-2 bg-[#E8F04F]/10 rounded-lg flex-wrap` },
         React.createElement("span", { className: "text-xs font-medium text-[#E8F04F]" }, `${selectedOrders.length} sélectionnée(s)`),
         orderTab === 'received' && React.createElement(Button, { size: 'sm', onClick: bulkProcessOrders, className: "!w-auto !py-1.5 !px-3 !text-xs" }, "Traiter"),
         orderTab === 'processing' && React.createElement(Button, { size: 'sm', onClick: bulkDeliverOrders, className: "!w-auto !py-1.5 !px-3 !text-xs" }, "Livrer"),
         React.createElement(Button, { variant: 'danger', size: 'sm', onClick: bulkCancelOrders, className: "!w-auto !py-1.5 !px-3 !text-xs" }, "Annuler"),
-        React.createElement("button", {
-          onClick: () => setSelectedOrders([]),
-          className: `text-xs text-[#9CA3AF] hover:text-white ml-auto`
-        }, "Désélectionner")
+        React.createElement("button", { onClick: () => setSelectedOrders([]), className: `text-xs text-[#9CA3AF] hover:text-white ml-auto` }, "Désélectionner")
       )
     ),
-    // Liste commandes
     filtered.length === 0
       ? React.createElement(EmptyState, {
-          icon: '🛒',
-          title: "Aucune commande",
-          subtitle: ordersSearch || ordersPeriod !== 'all'
-            ? "Aucune commande ne correspond à vos filtres."
-            : "Aucune commande dans cette catégorie.",
+          icon: '🛒', title: "Aucune commande",
+          subtitle: ordersSearch || ordersPeriod !== 'all' ? "Aucune commande ne correspond à vos filtres." : "Aucune commande dans cette catégorie.",
           action: (ordersSearch || ordersPeriod !== 'all') && React.createElement(Button, {
             variant: 'secondary', size: 'sm',
             onClick: () => { setOrdersSearch(''); setOrdersPeriod('all'); }
           }, "Réinitialiser les filtres")
         })
       : React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl overflow-hidden` },
-          // Header tableau desktop
           React.createElement("div", { className: "hidden md:flex items-center gap-3 px-4 py-3 bg-[#0E1B2D] border-b border-[#3A4A5F] text-xs uppercase tracking-wider text-[#9CA3AF] font-medium" },
-            React.createElement("input", {
-              type: "checkbox", checked: allSelected, onChange: toggleAll,
-              className: "w-4 h-4 rounded"
-            }),
+            React.createElement("input", { type: "checkbox", checked: allSelected, onChange: toggleAll, className: "w-4 h-4 rounded" }),
             React.createElement("div", { className: "flex-1" }, "Client / Date"),
             React.createElement("div", { className: "w-32 text-center" }, "Statut"),
             React.createElement("div", { className: "w-24 text-center" }, "Articles"),
             showPrices && React.createElement("div", { className: "w-32 text-right" }, "Total"),
             React.createElement("div", { className: "w-32 text-right" }, "Actions")
           ),
-          // Lignes
           filtered.map(order => {
             const isExpanded = expandedOrderId === order.id;
             const isSelected = selectedOrders.includes(order.id);
@@ -2262,7 +2235,6 @@ const renderAdminOrders = () => {
               key: order.id,
               className: `border-b border-[${THEME.colors.border}] last:border-0 ${isSelected ? 'bg-[#E8F04F]/5' : ''} ${urgency}`
             },
-              // Ligne principale (desktop)
               React.createElement("div", {
                 className: "hidden md:flex items-center gap-3 px-4 py-3 hover:bg-[#1E2F44] transition cursor-pointer",
                 onClick: () => setExpandedOrderId(isExpanded ? null : order.id)
@@ -2270,8 +2242,7 @@ const renderAdminOrders = () => {
                 React.createElement("input", {
                   type: "checkbox", checked: isSelected,
                   onChange: (e) => { e.stopPropagation(); toggleOne(order.id); },
-                  onClick: e => e.stopPropagation(),
-                  className: "w-4 h-4 rounded"
+                  onClick: e => e.stopPropagation(), className: "w-4 h-4 rounded"
                 }),
                 React.createElement("div", { className: "flex-1 min-w-0" },
                   React.createElement("p", { className: "text-white font-medium truncate" }, order.client?.nom || 'Client'),
@@ -2292,7 +2263,6 @@ const renderAdminOrders = () => {
                   React.createElement("span", { className: `text-xs inline-block transition ${isExpanded ? 'rotate-180' : ''}` }, "▼")
                 )
               ),
-              // Version mobile (carte empilée)
               React.createElement("div", {
                 className: "md:hidden p-4 hover:bg-[#1E2F44] transition cursor-pointer",
                 onClick: () => setExpandedOrderId(isExpanded ? null : order.id)
@@ -2302,8 +2272,7 @@ const renderAdminOrders = () => {
                     React.createElement("input", {
                       type: "checkbox", checked: isSelected,
                       onChange: (e) => { e.stopPropagation(); toggleOne(order.id); },
-                      onClick: e => e.stopPropagation(),
-                      className: "w-4 h-4 rounded flex-shrink-0"
+                      onClick: e => e.stopPropagation(), className: "w-4 h-4 rounded flex-shrink-0"
                     }),
                     React.createElement("div", null,
                       React.createElement("p", { className: "text-white font-medium text-sm" }, order.client?.nom || 'Client'),
@@ -2317,10 +2286,8 @@ const renderAdminOrders = () => {
                   React.createElement("span", null, order.items.length, " article(s)")
                 )
               ),
-              // Détails dépliés
               isExpanded && React.createElement("div", { className: `bg-[#0E1B2D] p-4 border-t border-[${THEME.colors.border}]` },
                 React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
-                  // Infos client
                   React.createElement("div", null,
                     React.createElement("h4", { className: "text-xs uppercase tracking-wider text-[#9CA3AF] mb-2" }, "Client"),
                     React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] rounded-xl p-3 space-y-1.5` },
@@ -2348,7 +2315,6 @@ const renderAdminOrders = () => {
                       }, "🖨 Imprimer")
                     )
                   ),
-                  // Articles
                   React.createElement("div", null,
                     React.createElement("h4", { className: "text-xs uppercase tracking-wider text-[#9CA3AF] mb-2" }, "Articles"),
                     React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] rounded-xl overflow-hidden` },
@@ -2368,7 +2334,6 @@ const renderAdminOrders = () => {
                     )
                   )
                 ),
-                // Actions
                 React.createElement("div", { className: "flex gap-2 justify-end mt-3 flex-wrap" },
                   orderTab === 'received' && React.createElement(React.Fragment, null,
                     React.createElement(Button, { size: 'sm', onClick: () => handleProcess(order.id), className: "!w-auto !py-1.5 !px-3 !text-xs" }, "Traiter"),
@@ -2388,9 +2353,11 @@ const renderAdminOrders = () => {
   );
 };
 
-// ===== Marques (admin) =====
+// ===== Marques =====
 const renderAdminBrands = () =>
   React.createElement("div", { className: "space-y-4 pb-24 lg:pb-6" },
+    // NOUVEAU : lien retour
+    React.createElement(BackToDashboard, null),
     React.createElement("div", { className: "flex justify-between items-start gap-3 flex-wrap" },
       React.createElement("div", null,
         React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Marques"),
@@ -2403,13 +2370,11 @@ const renderAdminBrands = () =>
     ),
     brands.length === 0
       ? React.createElement(EmptyState, {
-          icon: '🏷️',
-          title: "Aucune marque",
+          icon: '🏷️', title: "Aucune marque",
           subtitle: "Créez votre première marque pour commencer à organiser le catalogue.",
           action: React.createElement(Button, { onClick: openAddBrand }, "+ Ajouter une marque")
         })
       : React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl overflow-hidden` },
-          // Header tableau (desktop)
           React.createElement("div", { className: "hidden md:flex items-center gap-3 px-6 py-3 bg-[#0E1B2D] border-b border-[#3A4A5F] text-xs uppercase tracking-wider text-[#9CA3AF] font-medium" },
             React.createElement("div", { className: "w-12" }, "Logo"),
             React.createElement("div", { className: "flex-1" }, "Nom"),
@@ -2417,10 +2382,8 @@ const renderAdminBrands = () =>
             React.createElement("div", { className: "w-64 text-right" }, "Actions")
           ),
           brands.map(b => React.createElement("div", {
-            key: b.id,
-            className: `border-b border-[${THEME.colors.border}] last:border-0 hover:bg-[#1E2F44] transition`
+            key: b.id, className: `border-b border-[${THEME.colors.border}] last:border-0 hover:bg-[#1E2F44] transition`
           },
-            // Desktop row
             React.createElement("div", { className: "hidden md:flex items-center gap-3 px-6 py-3" },
               React.createElement("div", { className: "w-12" },
                 b.image ? React.createElement("img", { src: b.image, className: "w-10 h-10 rounded-lg object-cover" })
@@ -2443,7 +2406,6 @@ const renderAdminBrands = () =>
                 }, "Supprimer")
               )
             ),
-            // Mobile card
             React.createElement("div", { className: "md:hidden p-4 space-y-2" },
               React.createElement("div", { className: "flex items-center gap-3" },
                 b.image ? React.createElement("img", { src: b.image, className: "w-12 h-12 rounded-lg object-cover" })
@@ -2470,7 +2432,6 @@ const renderAdminBrands = () =>
             )
           ))
         ),
-    // Confirmation suppression marque
     confirmDeleteBrandId && React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" },
       React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-rose-500 rounded-2xl p-6 max-w-md w-full` },
         React.createElement("h3", { className: "text-white font-semibold text-lg mb-2" }, "Confirmer la suppression"),
@@ -2485,7 +2446,7 @@ const renderAdminBrands = () =>
     )
   );
 
-// ===== Produits & Données (admin) =====
+// ===== Produits (avec bouton ← Toutes les marques) =====
 const renderAdminProducts = () => {
   const brand = brands.find(b => b.id === selectedBrandForData);
   const products = brand ? (brand.products || []) : [];
@@ -2493,7 +2454,8 @@ const renderAdminProducts = () => {
   const showGlobal = !selectedBrandForData && (productsGlobalSearch.trim() !== '' || productsQuickFilter !== 'all' || productsSort !== 'name_asc');
 
   return React.createElement("div", { className: "space-y-4 pb-24 lg:pb-6" },
-    // Header
+    // NOUVEAU : lien retour
+    React.createElement(BackToDashboard, null),
     React.createElement("div", { className: "flex justify-between items-start gap-3 flex-wrap" },
       React.createElement("div", null,
         React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Produits & Données"),
@@ -2501,18 +2463,25 @@ const renderAdminProducts = () => {
       ),
       React.createElement(Button, { onClick: openAddProduct }, "+ Nouveau produit")
     ),
-    // Panneau sélection marque + import/export
     React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl p-4 space-y-3` },
       React.createElement("div", { className: "flex flex-wrap gap-2 items-end" },
         React.createElement("div", { className: "flex-1 min-w-[220px]" },
           React.createElement("label", { className: `block text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-1` }, "Marque"),
-          React.createElement("select", {
-            value: selectedBrandForData,
-            onChange: e => setSelectedBrandForData(e.target.value),
-            className: `w-full px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm outline-none`
-          },
-            React.createElement("option", { value: "" }, "-- Toutes les marques --"),
-            brands.map(b => React.createElement("option", { key: b.id, value: b.id }, `${b.name} (${(b.products || []).length})`))
+          React.createElement("div", { className: "flex gap-2" },
+            React.createElement("select", {
+              value: selectedBrandForData, onChange: e => setSelectedBrandForData(e.target.value),
+              className: `flex-1 px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm outline-none`
+            },
+              React.createElement("option", { value: "" }, "-- Toutes les marques --"),
+              brands.map(b => React.createElement("option", { key: b.id, value: b.id }, `${b.name} (${(b.products || []).length})`))
+            ),
+            // ⬇⬇⬇ NOUVEAU : bouton retour "Toutes les marques" quand une marque est sélectionnée
+            selectedBrandForData && React.createElement("button", {
+              onClick: () => setSelectedBrandForData(''),
+              className: "px-3 py-2 text-xs text-[#9CA3AF] hover:text-white bg-[#0E1B2D] border border-[#3A4A5F] rounded-lg transition whitespace-nowrap",
+              title: "Retour à toutes les marques"
+            }, "← Toutes")
+            // ⬆⬆⬆ FIN NOUVEAU
           )
         ),
         React.createElement("div", { className: "flex gap-2 flex-wrap" },
@@ -2523,24 +2492,17 @@ const renderAdminProducts = () => {
           React.createElement("input", { type: "file", ref: imageInputRef, accept: "image/*", multiple: true, onChange: handleAddImages, className: "hidden" })
         )
       ),
-      React.createElement("p", { className: `text-xs text-[#9CA3AF]` },
-        "Import et images en lot nécessitent une marque. Export fonctionne avec ou sans marque."
-      )
+      React.createElement("p", { className: `text-xs text-[#9CA3AF]` }, "Import et images en lot nécessitent une marque. Export fonctionne avec ou sans marque.")
     ),
-    // Recherche globale et filtres
     React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-xl p-3 space-y-2` },
       React.createElement("div", { className: "flex gap-2 flex-wrap" },
         React.createElement("input", {
-          type: "search",
-          placeholder: "Rechercher un produit (toutes marques)...",
-          "data-search-input": "products",
-          value: productsGlobalSearch,
-          onChange: e => setProductsGlobalSearch(e.target.value),
+          type: "search", placeholder: "Rechercher un produit (toutes marques)...",
+          "data-search-input": "products", value: productsGlobalSearch, onChange: e => setProductsGlobalSearch(e.target.value),
           className: `flex-1 min-w-[200px] px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm outline-none`
         }),
         React.createElement("select", {
-          value: productsSort,
-          onChange: e => setProductsSort(e.target.value),
+          value: productsSort, onChange: e => setProductsSort(e.target.value),
           className: `px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm outline-none`
         },
           React.createElement("option", { value: "name_asc" }, "Nom A-Z"),
@@ -2558,28 +2520,20 @@ const renderAdminProducts = () => {
           { key: 'hidden', label: '👁 Masqués' },
           { key: 'missing_price', label: '💰 Prix manquant' }
         ].map(f => React.createElement("button", {
-          key: f.key,
-          onClick: () => setProductsQuickFilter(f.key),
+          key: f.key, onClick: () => setProductsQuickFilter(f.key),
           className: `px-3 py-1.5 text-xs font-medium rounded-lg transition ${
-            productsQuickFilter === f.key
-              ? 'bg-[#E8F04F] text-[#0E1B2D]'
-              : 'bg-[#0E1B2D] text-[#9CA3AF] border border-[#3A4A5F] hover:text-white'
+            productsQuickFilter === f.key ? 'bg-[#E8F04F] text-[#0E1B2D]' : 'bg-[#0E1B2D] text-[#9CA3AF] border border-[#3A4A5F] hover:text-white'
           }`
         }, f.label))
       )
     ),
-    // Actions groupées produits
     selectedProducts.length > 0 && React.createElement("div", { className: "flex items-center gap-2 p-3 bg-[#E8F04F]/10 rounded-lg flex-wrap" },
       React.createElement("span", { className: "text-xs font-medium text-[#E8F04F]" }, `${selectedProducts.length} produit(s) sélectionné(s)`),
       React.createElement(Button, { size: 'sm', variant: 'secondary', onClick: () => bulkProductsAction('hide'), className: "!w-auto !py-1.5 !px-3 !text-xs" }, "Masquer"),
       React.createElement(Button, { size: 'sm', variant: 'secondary', onClick: () => bulkProductsAction('show'), className: "!w-auto !py-1.5 !px-3 !text-xs" }, "Afficher"),
       React.createElement(Button, { size: 'sm', variant: 'danger', onClick: () => bulkProductsAction('delete'), className: "!w-auto !py-1.5 !px-3 !text-xs" }, "Supprimer"),
-      React.createElement("button", {
-        onClick: () => setSelectedProducts([]),
-        className: `text-xs text-[#9CA3AF] hover:text-white ml-auto`
-      }, "Désélectionner")
+      React.createElement("button", { onClick: () => setSelectedProducts([]), className: `text-xs text-[#9CA3AF] hover:text-white ml-auto` }, "Désélectionner")
     ),
-    // Liste des produits (par marque OU globale)
     showGlobal
       ? React.createElement(Card, { title: "Résultats globaux", subtitle: `${globalList.length} produit(s)` },
           globalList.length === 0
@@ -2590,8 +2544,7 @@ const renderAdminProducts = () => {
           ? React.createElement(EmptyState, { icon: '📦', title: "Sélectionnez une marque", subtitle: "Choisissez une marque ci-dessus pour afficher ses produits." })
           : products.length === 0
             ? React.createElement(EmptyState, {
-                icon: '📦',
-                title: "Aucun produit dans cette marque",
+                icon: '📦', title: "Aucun produit dans cette marque",
                 subtitle: "Ajoutez votre premier produit ou importez un fichier Excel.",
                 action: React.createElement("div", { className: "flex gap-2" },
                   React.createElement(Button, { onClick: openAddProduct }, "+ Ajouter"),
@@ -2602,7 +2555,6 @@ const renderAdminProducts = () => {
                 React.createElement(ProductsList, { list: products, showBrand: false, brandId: brand.id })
               )
         ),
-    // Confirmation suppression produit
     confirmDeleteProduct && React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" },
       React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-rose-500 rounded-2xl p-6 max-w-md w-full` },
         React.createElement("h3", { className: "text-white font-semibold text-lg mb-2" }, "Confirmer la suppression"),
@@ -2616,20 +2568,13 @@ const renderAdminProducts = () => {
   );
 };
 
-// Sous-composant liste produits (réutilisable par marque et global)
+// Sous-composant liste produits
 const ProductsList = ({ list, showBrand, brandId }) => {
   const allSelected = list.length > 0 && list.every(p => selectedProducts.includes(`${p.brandId || brandId}::${p.id}`));
-  const toggleAll = () => {
-    if (allSelected) setSelectedProducts([]);
-    else setSelectedProducts(list.map(p => `${p.brandId || brandId}::${p.id}`));
-  };
-  const toggleOne = (key) => {
-    if (selectedProducts.includes(key)) setSelectedProducts(selectedProducts.filter(x => x !== key));
-    else setSelectedProducts([...selectedProducts, key]);
-  };
+  const toggleAll = () => { if (allSelected) setSelectedProducts([]); else setSelectedProducts(list.map(p => `${p.brandId || brandId}::${p.id}`)); };
+  const toggleOne = (key) => { if (selectedProducts.includes(key)) setSelectedProducts(selectedProducts.filter(x => x !== key)); else setSelectedProducts([...selectedProducts, key]); };
 
   return React.createElement(React.Fragment, null,
-    // Header desktop
     React.createElement("div", { className: "hidden md:flex items-center gap-3 px-2 py-2 border-b border-[#3A4A5F] text-xs uppercase tracking-wider text-[#9CA3AF] font-medium" },
       React.createElement("input", { type: "checkbox", checked: allSelected, onChange: toggleAll, className: "w-4 h-4 rounded" }),
       React.createElement("div", { className: "w-10" }),
@@ -2645,15 +2590,10 @@ const ProductsList = ({ list, showBrand, brandId }) => {
       const isSelected = selectedProducts.includes(key);
       const isEditing = inlinePriceEdit && inlinePriceEdit.key === key;
       return React.createElement("div", {
-        key,
-        className: `border-b border-[${THEME.colors.border}] last:border-0 hover:bg-[#1E2F44] transition ${isSelected ? 'bg-[#E8F04F]/5' : ''}`
+        key, className: `border-b border-[${THEME.colors.border}] last:border-0 hover:bg-[#1E2F44] transition ${isSelected ? 'bg-[#E8F04F]/5' : ''}`
       },
-        // Desktop
         React.createElement("div", { className: "hidden md:flex items-center gap-3 px-2 py-2" },
-          React.createElement("input", {
-            type: "checkbox", checked: isSelected, onChange: () => toggleOne(key),
-            className: "w-4 h-4 rounded"
-          }),
+          React.createElement("input", { type: "checkbox", checked: isSelected, onChange: () => toggleOne(key), className: "w-4 h-4 rounded" }),
           React.createElement("div", { className: "w-10" },
             p.image ? React.createElement("img", { src: p.image, className: "w-9 h-9 rounded object-cover" })
             : React.createElement("div", { className: "w-9 h-9 rounded bg-[#0E1B2D] flex items-center justify-center text-[#9CA3AF] text-[10px]" }, "—")
@@ -2669,13 +2609,9 @@ const ProductsList = ({ list, showBrand, brandId }) => {
                 type: "number", value: inlinePriceEdit.value,
                 onChange: e => setInlinePriceEdit({ ...inlinePriceEdit, value: e.target.value }),
                 onKeyDown: e => { if (e.key === 'Enter') saveInlinePrice(); if (e.key === 'Escape') setInlinePriceEdit(null); },
-                autoFocus: true,
-                className: `w-20 px-2 py-1 text-xs bg-[#0E1B2D] rounded border border-[#E8F04F] text-white text-right outline-none`
+                autoFocus: true, className: `w-20 px-2 py-1 text-xs bg-[#0E1B2D] rounded border border-[#E8F04F] text-white text-right outline-none`
               }),
-              React.createElement("button", {
-                onClick: saveInlinePrice, disabled: inlinePriceSaving,
-                className: "text-[#3DC59D] text-xs px-1 disabled:opacity-50"
-              }, "✓")
+              React.createElement("button", { onClick: saveInlinePrice, disabled: inlinePriceSaving, className: "text-[#3DC59D] text-xs px-1 disabled:opacity-50" }, "✓")
             )
             : React.createElement("button", {
                 onClick: () => setInlinePriceEdit({ key, brandId: bId, productId: p.id, value: p.price }),
@@ -2690,28 +2626,14 @@ const ProductsList = ({ list, showBrand, brandId }) => {
             }, p.hidden ? "Masqué" : "Visible")
           ),
           React.createElement("div", { className: "w-52 text-right whitespace-nowrap" },
-            React.createElement("button", {
-              onClick: () => openEditProduct(bId, p),
-              className: `px-2 py-1 text-xs font-medium rounded bg-[#1E2F44] text-[#E8F04F] hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition mr-1`
-            }, "Modifier"),
-            React.createElement("button", {
-              onClick: () => duplicateProduct(bId, p),
-              className: `px-2 py-1 text-xs font-medium rounded bg-[#1E2F44] text-white hover:bg-[#2A3A4F] transition mr-1`,
-              title: "Dupliquer"
-            }, "⧉"),
-            React.createElement("button", {
-              onClick: () => setConfirmDeleteProduct({ brandId: bId, productId: p.id }),
-              className: `px-2 py-1 text-xs font-medium rounded bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition`
-            }, "🗑")
+            React.createElement("button", { onClick: () => openEditProduct(bId, p), className: `px-2 py-1 text-xs font-medium rounded bg-[#1E2F44] text-[#E8F04F] hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition mr-1` }, "Modifier"),
+            React.createElement("button", { onClick: () => duplicateProduct(bId, p), className: `px-2 py-1 text-xs font-medium rounded bg-[#1E2F44] text-white hover:bg-[#2A3A4F] transition mr-1`, title: "Dupliquer" }, "⧉"),
+            React.createElement("button", { onClick: () => setConfirmDeleteProduct({ brandId: bId, productId: p.id }), className: `px-2 py-1 text-xs font-medium rounded bg-rose-500/10 text-rose-400 hover:bg-rose-500 hover:text-white transition` }, "🗑")
           )
         ),
-        // Mobile
         React.createElement("div", { className: "md:hidden p-3 space-y-2" },
           React.createElement("div", { className: "flex items-start gap-2" },
-            React.createElement("input", {
-              type: "checkbox", checked: isSelected, onChange: () => toggleOne(key),
-              className: "w-4 h-4 rounded mt-1 flex-shrink-0"
-            }),
+            React.createElement("input", { type: "checkbox", checked: isSelected, onChange: () => toggleOne(key), className: "w-4 h-4 rounded mt-1 flex-shrink-0" }),
             p.image ? React.createElement("img", { src: p.image, className: "w-10 h-10 rounded object-cover flex-shrink-0" })
             : React.createElement("div", { className: "w-10 h-10 rounded bg-[#0E1B2D] flex items-center justify-center text-[#9CA3AF] text-[10px] flex-shrink-0" }, "—"),
             React.createElement("div", { className: "flex-1 min-w-0" },
@@ -2734,29 +2656,16 @@ const ProductsList = ({ list, showBrand, brandId }) => {
             )
           ),
           React.createElement("div", { className: "flex gap-1 flex-wrap" },
-            React.createElement("button", {
-              onClick: () => toggleProductVisibility(bId, p.id),
-              className: `text-[10px] px-2 py-1 rounded ${p.hidden ? 'bg-gray-700 text-gray-300' : 'bg-[#3DC59D]/20 text-[#3DC59D]'}`
-            }, p.hidden ? "Masqué" : "Visible"),
-            React.createElement("button", {
-              onClick: () => openEditProduct(bId, p),
-              className: `text-[10px] px-2 py-1 rounded bg-[#1E2F44] text-[#E8F04F]`
-            }, "Modifier"),
-            React.createElement("button", {
-              onClick: () => duplicateProduct(bId, p),
-              className: `text-[10px] px-2 py-1 rounded bg-[#1E2F44] text-white`
-            }, "⧉"),
-            React.createElement("button", {
-              onClick: () => setConfirmDeleteProduct({ brandId: bId, productId: p.id }),
-              className: `text-[10px] px-2 py-1 rounded bg-rose-500/10 text-rose-400`
-            }, "🗑")
+            React.createElement("button", { onClick: () => toggleProductVisibility(bId, p.id), className: `text-[10px] px-2 py-1 rounded ${p.hidden ? 'bg-gray-700 text-gray-300' : 'bg-[#3DC59D]/20 text-[#3DC59D]'}` }, p.hidden ? "Masqué" : "Visible"),
+            React.createElement("button", { onClick: () => openEditProduct(bId, p), className: `text-[10px] px-2 py-1 rounded bg-[#1E2F44] text-[#E8F04F]` }, "Modifier"),
+            React.createElement("button", { onClick: () => duplicateProduct(bId, p), className: `text-[10px] px-2 py-1 rounded bg-[#1E2F44] text-white` }, "⧉"),
+            React.createElement("button", { onClick: () => setConfirmDeleteProduct({ brandId: bId, productId: p.id }), className: `text-[10px] px-2 py-1 rounded bg-rose-500/10 text-rose-400` }, "🗑")
           )
         )
       );
     })
   );
 };
-
 // ===== Clients (annuaire depuis les commandes) =====
 const renderAdminClients = () => {
   const directory = buildClientsDirectory();
@@ -2770,14 +2679,14 @@ const renderAdminClients = () => {
     : directory;
 
   return React.createElement("div", { className: "space-y-4 pb-24 lg:pb-6" },
-    // Header
+    // NOUVEAU : lien retour
+    React.createElement(BackToDashboard, null),
     React.createElement("div", { className: "flex justify-between items-start flex-wrap gap-3" },
       React.createElement("div", null,
         React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Clients"),
         React.createElement("p", { className: `text-[#9CA3AF] text-sm mt-1` }, `${directory.length} client(s) — construits depuis les commandes`)
       )
     ),
-    // Barre de recherche
     React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-xl p-3` },
       React.createElement("input", {
         type: "search",
@@ -2788,7 +2697,6 @@ const renderAdminClients = () => {
         className: `w-full px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm outline-none`
       })
     ),
-    // Liste
     filtered.length === 0
       ? React.createElement(EmptyState, {
           icon: '👥',
@@ -2839,7 +2747,14 @@ const renderAdminClients = () => {
                 )
               ),
               isExpanded && React.createElement("div", { className: `border-t border-[${THEME.colors.border}] p-4 space-y-3 bg-[#0E1B2D]` },
-                // Contact & actions
+                // NOUVEAU : bouton replier pour clarté
+                React.createElement("button", {
+                  onClick: () => setExpandedClientKey(null),
+                  className: `text-xs text-[#9CA3AF] hover:text-white inline-flex items-center gap-1 transition`
+                },
+                  React.createElement("span", null, "▲"),
+                  React.createElement("span", null, "Replier")
+                ),
                 React.createElement("div", { className: "flex gap-2 flex-wrap" },
                   c.phone && React.createElement("button", {
                     onClick: () => window.location.href = `tel:${(c.phone || '').replace(/[^\d+]/g, '')}`,
@@ -2850,19 +2765,16 @@ const renderAdminClients = () => {
                     className: `text-xs px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30 transition font-medium`
                   }, "💬 WhatsApp")
                 ),
-                // Adresses
                 c.addresses.length > 0 && React.createElement("div", null,
                   React.createElement("p", { className: `text-xs uppercase tracking-wider text-[#9CA3AF] mb-1` }, "Adresse(s) connue(s)"),
                   React.createElement("div", { className: "space-y-1" },
                     c.addresses.map((a, i) => React.createElement("p", { key: i, className: `text-xs text-white` }, "📍 ", a))
                   )
                 ),
-                // Historique
                 React.createElement("div", null,
                   React.createElement("p", { className: `text-xs uppercase tracking-wider text-[#9CA3AF] mb-2` }, `Historique (${sortedOrders.length})`),
                   React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] rounded-xl overflow-hidden max-h-72 overflow-y-auto` },
                     sortedOrders.map(o => {
-                      const age = getOrderAge(o);
                       return React.createElement("button", {
                         key: o.id,
                         onClick: () => { setAdminSection('orders'); setOrderTab(o.status || 'received'); setExpandedOrderId(o.id); },
@@ -2904,7 +2816,8 @@ const renderAdminStats = () => {
   const maxBrandRev = revByBrand.length > 0 ? revByBrand[0].revenue : 1;
 
   return React.createElement("div", { className: "space-y-6 pb-24 lg:pb-6" },
-    // Header + période + export
+    // NOUVEAU : lien retour
+    React.createElement(BackToDashboard, null),
     React.createElement("div", { className: "flex justify-between items-start flex-wrap gap-3" },
       React.createElement("div", null,
         React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Statistiques"),
@@ -2914,7 +2827,6 @@ const renderAdminStats = () => {
         React.createElement(Button, { variant: 'secondary', size: 'sm', onClick: exportStatsToExcel }, "📤 Exporter Excel")
       )
     ),
-    // Sélecteur période
     React.createElement("div", { className: "flex gap-2 flex-wrap" },
       [4, 8, 12, 0].map(p => React.createElement("button", {
         key: p,
@@ -2924,14 +2836,12 @@ const renderAdminStats = () => {
         }`
       }, p === 0 ? 'Tout' : `${p} sem.`))
     ),
-    // KPI
     React.createElement("div", { className: "grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4" },
       React.createElement(StatCard, { label: "Commandes période", value: totalInPeriod, sub: `sur ${orders.length} au total`, accent: true }),
       showPrices && React.createElement(StatCard, { label: "Revenu période", value: revenueInPeriod.toLocaleString() + ' DZD' }),
       React.createElement(StatCard, { label: "Clients uniques", value: clientStats.length }),
       React.createElement(StatCard, { label: "Panier moyen", value: Math.round(getAverageBasket()).toLocaleString() + ' DZD' })
     ),
-    // Nouveaux vs récurrents
     React.createElement(Card, { title: "Nouveaux vs récurrents", subtitle: "Sur les 30 derniers jours" },
       React.createElement("div", { className: "grid grid-cols-2 gap-4" },
         React.createElement("div", { className: `bg-[#0E1B2D] rounded-xl p-4 text-center` },
@@ -2946,7 +2856,6 @@ const renderAdminStats = () => {
         )
       )
     ),
-    // Graphique hebdo + top clients
     React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
       React.createElement(Card, { title: "Commandes par semaine" },
         weeklyStats.some(w => w.count > 0)
@@ -2955,8 +2864,7 @@ const renderAdminStats = () => {
                 weeklyStats.map((w, i) => {
                   const pct = w.count / maxWeekCount;
                   return React.createElement("div", {
-                    key: i,
-                    style: { flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' },
+                    key: i, style: { flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' },
                     title: `${w.label} : ${w.count} commande(s)`
                   },
                     w.count > 0 && weeklyStats.length <= 20 && React.createElement("span", {
@@ -3009,7 +2917,6 @@ const renderAdminStats = () => {
             )
       )
     ),
-    // Top produits + Revenu par marque
     React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
       React.createElement(Card, { title: "Top produits", subtitle: `${topProducts.length} produit(s) commandé(s)` },
         topProducts.length === 0
@@ -3070,12 +2977,13 @@ const renderAdminStats = () => {
 // ===== Paramètres & Options avancées =====
 const renderAdminSettings = () =>
   React.createElement("div", { className: "space-y-6 pb-24 lg:pb-6" },
+    // NOUVEAU : lien retour
+    React.createElement(BackToDashboard, null),
     React.createElement("div", null,
       React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Paramètres & Options avancées"),
       React.createElement("p", { className: `text-[#9CA3AF] text-sm mt-1` }, "Configuration complète de l'application")
     ),
     React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-4" },
-      // Banque d'images
       React.createElement(Card, { title: "🖼️ Banque d'images", subtitle: "Cloudinary ou imgbb (utilisé pour toutes les images)" },
         React.createElement("div", { className: "space-y-3" },
           React.createElement("div", { className: "grid grid-cols-2 gap-2" },
@@ -3117,7 +3025,6 @@ const renderAdminSettings = () =>
           )
         )
       ),
-      // Notifications
       React.createElement(Card, { title: "🔔 Notifications ntfy", subtitle: "Topic pour les alertes commandes" },
         React.createElement("div", { className: "space-y-3" },
           React.createElement("input", {
@@ -3135,7 +3042,6 @@ const renderAdminSettings = () =>
           )
         )
       ),
-      // Logo
       React.createElement(Card, { title: "🖼️ Logo", subtitle: "Affiché dans l'en-tête et la sidebar" },
         React.createElement("div", { className: "space-y-3" },
           logoUrl && React.createElement("div", { className: `bg-[#0E1B2D] rounded-xl p-4 flex items-center justify-center` },
@@ -3159,7 +3065,6 @@ const renderAdminSettings = () =>
           )
         )
       ),
-      // Titre
       React.createElement(Card, { title: "📝 Titre de l'application", subtitle: "Nom affiché dans l'interface" },
         React.createElement("div", { className: "space-y-3" },
           React.createElement("div", { className: `p-3 bg-[#0E1B2D] rounded-lg` },
@@ -3174,21 +3079,18 @@ const renderAdminSettings = () =>
           React.createElement(Button, { size: 'sm', onClick: saveTitle, className: "!w-auto" }, "Enregistrer")
         )
       ),
-      // Admins
       React.createElement(Card, { title: "👥 Administrateurs", subtitle: "Gérer les accès administrateur" },
         React.createElement("div", { className: "space-y-3" },
           React.createElement(Button, { variant: 'secondary', onClick: openManageAdmins }, "Gérer les administrateurs"),
           React.createElement("p", { className: `text-xs text-[#9CA3AF]` }, "Code de suppression : 1747")
         )
       ),
-      // Maintenance
       React.createElement(Card, { title: "🔧 Maintenance", subtitle: "Actions techniques" },
         React.createElement("div", { className: "space-y-2" },
           React.createElement(Button, { variant: 'secondary', size: 'sm', onClick: migrateOrderDates }, "Migrer les dates des commandes"),
           React.createElement("p", { className: `text-xs text-[#9CA3AF]` }, "Convertit les anciennes dates en timestamp pour un tri fiable.")
         )
       ),
-      // Sauvegarde JSON
       React.createElement(Card, { title: "💾 Sauvegarde complète", subtitle: "Export/Import JSON (jamais les admins)" },
         React.createElement("div", { className: "space-y-3" },
           React.createElement("p", { className: `text-xs text-[#9CA3AF]` },
@@ -3201,7 +3103,6 @@ const renderAdminSettings = () =>
           )
         )
       ),
-      // Journal d'activité
       React.createElement(Card, { title: "📋 Journal d'activité", subtitle: `${activityLog.length} entrée(s) — 100 max` },
         activityLog.length === 0
           ? React.createElement("p", { className: "text-center text-[#9CA3AF] py-6 text-sm" }, "Aucune activité enregistrée")
@@ -3288,7 +3189,6 @@ const renderProductGrid = () => {
         }))
       );
 };
-
       // ===== Modales =====
       const renderModals = () => React.createElement(React.Fragment, null,
 
@@ -3331,6 +3231,7 @@ const renderProductGrid = () => {
         ),
 
         // --- Modale Produit (ajout + édition) ---
+        // ⬇⬇⬇ NOUVEAU : lien "← Changer de marque" quand une marque est déjà choisie
         React.createElement(Modal, {
           isOpen: modals.product,
           title: editingProduct ? "Modifier le produit" : "Nouveau produit",
@@ -3338,6 +3239,18 @@ const renderProductGrid = () => {
           size: 'md'
         },
           React.createElement("div", { className: "space-y-4" },
+            // NOUVEAU : lien retour vers la sélection de marque (uniquement en création, si une marque est déjà choisie)
+            !editingProduct && newProduct.brandId && React.createElement("button", {
+              onClick: () => {
+                // On efface le brandId et on revient à la sélection
+                setNewProduct({ ...newProduct, brandId: null });
+                setModals(p => ({ ...p, product: false, brandSelect: true }));
+              },
+              className: `inline-flex items-center gap-1 text-xs text-[#9CA3AF] hover:text-white transition`
+            },
+              React.createElement("span", { className: "text-base" }, "←"),
+              React.createElement("span", null, "Changer de marque")
+            ),
             React.createElement("div", null,
               React.createElement("label", { className: `block text-xs font-medium text-[${THEME.colors.textMuted}] uppercase tracking-wider mb-1` }, "Nom"),
               React.createElement("input", {
@@ -3393,27 +3306,47 @@ const renderProductGrid = () => {
             )
           )
         ),
+        // ⬆⬆⬆ FIN NOUVEAU
 
         // --- Modale Sélection de marque ---
+        // ⬇⬇⬇ NOUVEAU : bouton "Annuler" ajouté en bas
         React.createElement(Modal, {
           isOpen: modals.brandSelect,
           title: "Choisir une marque",
           onClose: () => setModals(p => ({ ...p, brandSelect: false })),
           size: 'md'
         },
-          brands.length === 0
-            ? React.createElement("p", { className: `text-center text-[#9CA3AF] py-6` }, "Aucune marque. Créez-en une d'abord.")
-            : React.createElement("div", { className: "grid grid-cols-2 gap-3 mb-4" },
-                brands.map(b => React.createElement("button", {
-                  key: b.id,
-                  onClick: () => {
-                    setNewProduct({ ...newProduct, brandId: b.id });
-                    setModals(p => ({ ...p, brandSelect: false, product: true }));
-                  },
-                  className: `p-4 bg-[${THEME.colors.inputBg}] rounded-xl text-white hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition text-left font-medium border border-[${THEME.colors.border}]`
-                }, b.name))
-              )
+          React.createElement("div", { className: "space-y-4" },
+            brands.length === 0
+              ? React.createElement(React.Fragment, null,
+                  React.createElement("p", { className: `text-center text-[#9CA3AF] py-6` }, "Aucune marque. Créez-en une d'abord."),
+                  React.createElement("div", { className: "flex gap-3 justify-end" },
+                    React.createElement(Button, { variant: 'ghost', onClick: () => setModals(p => ({ ...p, brandSelect: false })), className: "!w-auto" }, "Fermer"),
+                    React.createElement(Button, {
+                      onClick: () => { setModals(p => ({ ...p, brandSelect: false })); openAddBrand(); },
+                      className: "!w-auto"
+                    }, "+ Créer une marque")
+                  )
+                )
+              : React.createElement(React.Fragment, null,
+                  React.createElement("div", { className: "grid grid-cols-2 gap-3" },
+                    brands.map(b => React.createElement("button", {
+                      key: b.id,
+                      onClick: () => {
+                        setNewProduct({ ...newProduct, brandId: b.id });
+                        setModals(p => ({ ...p, brandSelect: false, product: true }));
+                      },
+                      className: `p-4 bg-[${THEME.colors.inputBg}] rounded-xl text-white hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition text-left font-medium border border-[${THEME.colors.border}]`
+                    }, b.name))
+                  ),
+                  // NOUVEAU : bouton Annuler explicite en bas
+                  React.createElement("div", { className: "flex gap-3 justify-end pt-2" },
+                    React.createElement(Button, { variant: 'ghost', onClick: () => setModals(p => ({ ...p, brandSelect: false })), className: "!w-auto" }, "Annuler")
+                  )
+                )
+          )
         ),
+        // ⬆⬆⬆ FIN NOUVEAU
 
         // --- Fiche produit (public) ---
         React.createElement(Modal, {
@@ -3502,6 +3435,7 @@ const renderProductGrid = () => {
         ),
 
         // --- Gestion des admins ---
+        // ⬇⬇⬇ NOUVEAU : bouton "Fermer" ajouté en bas
         React.createElement(Modal, {
           isOpen: showManageAdmins,
           title: "Administrateurs",
@@ -3548,9 +3482,14 @@ const renderProductGrid = () => {
                   showToast(`${newAdminName} ajouté.`, 'success');
                 } catch (err) { showToast(err.message, 'error'); }
               }, className: "!w-auto" }, "Ajouter")
+            ),
+            // NOUVEAU : bouton Fermer explicite en bas
+            React.createElement("div", { className: "flex gap-3 justify-end pt-2" },
+              React.createElement(Button, { variant: 'ghost', onClick: () => setShowManageAdmins(false), className: "!w-auto" }, "Fermer")
             )
           )
         ),
+        // ⬆⬆⬆ FIN NOUVEAU
 
         // --- Confirmation suppression admin ---
         React.createElement(Modal, {
@@ -3575,7 +3514,7 @@ const renderProductGrid = () => {
           )
         ),
 
-        // --- Confirmation annulation de commande (NOUVEAU) ---
+        // --- Confirmation annulation de commande ---
         confirmCancelOrderId && React.createElement("div", { className: "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" },
           React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-rose-500 rounded-2xl p-6 max-w-md w-full` },
             React.createElement("h3", { className: "text-white font-semibold text-lg mb-2" }, "Confirmer l'annulation"),
@@ -3610,7 +3549,8 @@ const renderProductGrid = () => {
             ),
             React.createElement("button", {
               onClick: () => setModals(p => ({ ...p, cart: false })),
-              className: `w-8 h-8 rounded-full text-[#9CA3AF] hover:text-white hover:bg-[#0E1B2D] transition`
+              className: `w-8 h-8 rounded-full text-[#9CA3AF] hover:text-white hover:bg-[#0E1B2D] transition`,
+              title: "Fermer le panier"
             }, "✕")
           ),
           cart.length === 0
@@ -3637,7 +3577,8 @@ const renderProductGrid = () => {
                         ),
                         React.createElement("button", {
                           onClick: () => removeFromCart(item.id),
-                          className: "text-rose-400 hover:text-rose-300 text-sm flex-shrink-0"
+                          className: "text-rose-400 hover:text-rose-300 text-sm flex-shrink-0",
+                          title: "Retirer l'article"
                         }, "✕")
                       ),
                       React.createElement("div", { className: "flex justify-between items-center mt-3" },
@@ -3691,7 +3632,6 @@ const renderProductGrid = () => {
       // ===== Squelette de chargement =====
       if (loading) {
         return React.createElement("div", { className: `fixed inset-0 bg-[${THEME.colors.background}] flex` },
-          // Sidebar squelette (desktop)
           React.createElement("aside", { className: "hidden lg:flex w-64 flex-shrink-0 border-r border-[#3A4A5F] bg-[#0A1622] flex-col p-6 space-y-4" },
             React.createElement(Skeleton, { h: 'h-12', w: 'w-32' }),
             React.createElement(Skeleton, { h: 'h-8' }),
@@ -3751,10 +3691,8 @@ const renderProductGrid = () => {
             )
           )
         ),
-        // Barre de navigation mobile
-        MobileNav(),
-        MobileMoreMenu(),
-        // Bouton flottant panier
+        React.createElement(MobileNav, null),
+        React.createElement(MobileMoreMenu, null),
         React.createElement(Button, {
           onClick: () => setModals(p => ({ ...p, cart: true })),
           className: `fixed bottom-20 lg:bottom-6 right-4 lg:right-6 !w-auto !h-14 !px-5 !rounded-full shadow-2xl z-30`,
@@ -3775,3 +3713,5 @@ const renderProductGrid = () => {
   </script>
 </body>
 </html>
+
+
