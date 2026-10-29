@@ -26,14 +26,10 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes scaleIn { from { transform: scale(0.96); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
     .animate-slide-up { animation: slideUp 0.3s ease-out; }
   </style>
   <meta name="theme-color" content="#030712">
   <meta name="description" content="Précommandes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="apple-touch-icon" href="./icon.png">
 </head>
 <body>
   <div id="root"></div>
@@ -164,23 +160,15 @@
         React.createElement("div", { className: "p-4" },
           React.createElement("h3", { className: `text-[${THEME.colors.text}] font-semibold text-sm truncate` }, product.name),
           React.createElement("p", { className: `text-[${THEME.colors.textMuted}] text-xs mt-1` }, "Pack: ", product.qty, " unités"),
-          showPrices && React.createElement("p", { className: `text-[${THEME.colors.secondary}] text-sm font-semibold mt-2` }, product.price.toLocaleString(), " DZD")
+          showPrices && React.createElement("p", { className: `text-[${THEME.colors.secondary}] text-sm font-semibold mt-2` }, Number(product.price).toLocaleString(), " DZD")
         )
       );
 
     const Toast = ({ message, type, onClose }) => {
       if (!message) return null;
-      const accentColors = {
-        success: 'border-[#3DC59D]',
-        error: 'border-rose-500',
-        info: 'border-[#E8F04F]'
-      };
+      const accentColors = { success: 'border-[#3DC59D]', error: 'border-rose-500', info: 'border-[#E8F04F]' };
       const icons = { success: '✓', error: '✕', info: 'ℹ' };
-      const textColors = {
-        success: 'text-[#3DC59D]',
-        error: 'text-rose-400',
-        info: 'text-[#E8F04F]'
-      };
+      const textColors = { success: 'text-[#3DC59D]', error: 'text-rose-400', info: 'text-[#E8F04F]' };
       return React.createElement("div", {
         className: `fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] max-w-md w-full p-4 rounded-xl bg-[#0E1B2D]/95 backdrop-blur-xl border border-white/5 shadow-2xl ${accentColors[type] || 'border-white/5'} border-l-4 animate-slide-up`
       }, React.createElement("div", { className: "flex items-center gap-3" },
@@ -256,14 +244,10 @@
             if (data) {
               const brandsArray = Object.keys(data).map(key => ({ id: key, ...data[key] }));
               setBrands(brandsArray);
-            } else {
-              setBrands([]);
-            }
+            } else setBrands([]);
           });
           return () => brandsRef.off('value', brandsListener);
-        } catch (err) {
-          console.error('Erreur listener brands:', err);
-        }
+        } catch (err) { console.error('Erreur listener brands:', err); }
       }, []);
 
       useEffect(() => {
@@ -275,22 +259,17 @@
               const ordersArray = Object.keys(data).map(key => {
                 const order = data[key];
                 return {
-                  ...order,
-                  id: key,
+                  ...order, id: key,
                   items: Array.isArray(order.items) ? order.items : [],
                   status: order.status || 'received',
                   client: order.client || { nom: '', adresse: '', telephone: '', commentaire: '' }
                 };
               });
               setOrders(ordersArray);
-            } else {
-              setOrders([]);
-            }
+            } else setOrders([]);
           });
           return () => ordersRef.off('value', ordersListener);
-        } catch (err) {
-          console.error('Erreur listener orders:', err);
-        }
+        } catch (err) { console.error('Erreur listener orders:', err); }
       }, []);
 
       useEffect(() => { if (logoUrl) localStorage.setItem('app_logo', logoUrl); else localStorage.removeItem('app_logo'); }, [logoUrl]);
@@ -360,9 +339,7 @@
         if (!order) return null;
         if (typeof order.timestamp === 'number' && order.timestamp > 0) return new Date(order.timestamp);
         if (!order.date) return null;
-        let s = String(order.date)
-          .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
-          .replace(/\u00a0/g, ' ');
+        let s = String(order.date).replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '').replace(/\u00a0/g, ' ');
         if (/^\d{4}-\d{2}-\d{2}/.test(s.trim())) {
           const d = new Date(s);
           if (!isNaN(d.getTime())) return d;
@@ -473,14 +450,6 @@
           if (!json.success) throw new Error(json.error?.message || 'Erreur upload imgbb');
           return json.data.url;
         }
-      };
-
-      const handleFormImageUpload = (setter, state) => async (dataUrl) => {
-        try {
-          const url = await uploadToImgbb(dataUrl);
-          setter({ ...state, image: url });
-          showToast('Image uploadée avec succès.', 'success');
-        } catch (err) { console.error(err); showToast('Erreur upload image: ' + err.message, 'error'); }
       };
 
       const handleLogoUpload = async (e) => {
@@ -618,7 +587,7 @@
         if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
         longPressTimerRef.current = setTimeout(() => {
           longPressTriggeredRef.current = true;
-          if (isAdmin) { setIsAdmin(false); showToast('Mode administrateur désactivé.', 'info'); }
+          if (isAdmin) { setIsAdmin(false); setAdminSection('home'); showToast('Mode administrateur désactivé.', 'info'); }
           else { openPinModal('verify'); }
         }, 2000);
       };
@@ -627,7 +596,8 @@
       };
       const handleLogoClick = (e) => {
         if (longPressTriggeredRef.current) { e.preventDefault(); longPressTriggeredRef.current = false; return; }
-        goHome();
+        if (isAdmin) setAdminSection('home');
+        else goHome();
       };
       useEffect(() => { return () => { if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current); }; }, []);
 
@@ -640,7 +610,7 @@
       };
 
       const openManageAdmins = () => {
-        fetchAdmins().then(setAdminList).catch(err => { showToast('Erreur chargement admins.', 'error'); });
+        fetchAdmins().then(setAdminList).catch(() => { showToast('Erreur chargement admins.', 'error'); });
         setShowManageAdmins(true);
       };
 
@@ -698,6 +668,8 @@
         try {
           await firebase.database().ref('brands').child(editingBrandId).update({ name: editingBrandName, image: editingBrandImage });
           setEditingBrandId(null);
+          setEditingBrandName('');
+          setEditingBrandImage(null);
           setModals(p => ({ ...p, brand: false }));
           showToast("Marque modifiée.", "success");
         } catch (err) { showToast('Erreur modification marque.', 'error'); }
@@ -720,8 +692,14 @@
           setNewProduct({ name: '', qty: '', price: '', image: null, brandId: selectedBrandForData });
           setModals(p => ({ ...p, product: true }));
         } else {
+          setNewProduct({ name: '', qty: '', price: '', image: null, brandId: null });
           setModals(p => ({ ...p, brandSelect: true }));
         }
+      };
+      const openAddProductFromHome = () => {
+        setEditingProduct(null);
+        setNewProduct({ name: '', qty: '', price: '', image: null, brandId: null });
+        setModals(p => ({ ...p, brandSelect: true }));
       };
       const openEditProduct = (brandId, product) => {
         setEditingProduct({ ...product, brandId });
@@ -748,7 +726,7 @@
         if (!brand) return;
         try {
           const updatedProducts = brand.products.map(p =>
-            p.id === editingProduct.id ? { ...editingProduct, qty: Number(editingProduct.qty), price: Number(editingProduct.price) } : p
+            p.id === editingProduct.id ? { ...p, name: editingProduct.name, qty: Number(editingProduct.qty), price: Number(editingProduct.price), image: editingProduct.image } : p
           );
           await firebase.database().ref('brands').child(brand.id).update({ products: updatedProducts });
           setEditingProduct(null);
@@ -897,7 +875,6 @@
       };
 
       const getTotalPrice = () => cart.reduce((sum, item) => sum + item.quantity * item.price * item.packQty, 0);
-      const getTotalItems = () => cart.reduce((sum, item) => sum + item.quantity, 0);
 
       const sendNtfy = (totalItems, total) => {
         const topic = ntfyTopic || 'ldholdingnotif';
@@ -1091,10 +1068,10 @@
       const totalProducts = brands.reduce((s, b) => s + (b.products || []).length, 0);
       const pendingOrders = orders.filter(o => o.status === 'received').length;
 
-      // ---------- RENDER HELPERS ----------
+      // ---------- UI HELPERS ----------
       const Card = ({ children, className = '', title, subtitle, action }) =>
         React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl p-6 ${className}` },
-          (title || action) && React.createElement("div", { className: "flex justify-between items-start mb-4" },
+          (title || action) && React.createElement("div", { className: "flex justify-between items-start mb-4 gap-2" },
             React.createElement("div", null,
               title && React.createElement("h3", { className: `text-[${THEME.colors.text}] font-semibold text-base` }, title),
               subtitle && React.createElement("p", { className: `text-[${THEME.colors.textMuted}] text-sm mt-1` }, subtitle)
@@ -1109,6 +1086,15 @@
           React.createElement("p", { className: `text-[${THEME.colors.textMuted}] text-xs uppercase tracking-wider font-medium` }, label),
           React.createElement("p", { className: `text-3xl font-bold mt-2 ${accent ? 'text-[#E8F04F]' : 'text-[#3DC59D]'}` }, value),
           sub && React.createElement("p", { className: `text-[${THEME.colors.textMuted}] text-xs mt-1` }, sub)
+        );
+
+      const ActionButton = ({ icon, label, onClick, danger = false }) =>
+        React.createElement("button", {
+          onClick,
+          className: `flex flex-col items-center justify-center gap-2 p-4 bg-[${THEME.colors.inputBg}] rounded-xl border border-[${THEME.colors.border}] hover:border-[${THEME.colors.primary}] hover:bg-[#E8F04F]/10 transition text-center min-h-[100px] ${danger ? 'hover:border-rose-500 hover:bg-rose-500/10' : ''}`
+        },
+          React.createElement("span", { className: "text-2xl" }, icon),
+          React.createElement("span", { className: `text-sm font-medium ${danger ? 'text-rose-300' : 'text-[${THEME.colors.text}]'}` }, label)
         );
 
       const NavItem = ({ section, icon, children }) =>
@@ -1126,11 +1112,18 @@
 
       const renderSidebar = () =>
         React.createElement("aside", { className: `hidden lg:flex w-64 flex-shrink-0 border-r border-[${THEME.colors.border}] bg-[#0A1622] flex-col h-screen sticky top-0` },
-          React.createElement("div", { className: `p-6 border-b border-[${THEME.colors.border}] cursor-pointer select-none`, onClick: handleLogoClick },
+          React.createElement("div", {
+            className: `p-6 border-b border-[${THEME.colors.border}] cursor-pointer select-none`,
+            onClick: handleLogoClick,
+            onMouseDown: startLongPress,
+            onMouseUp: cancelLongPress,
+            onMouseLeave: cancelLongPress,
+            title: "Appui long pour vous déconnecter"
+          },
             React.createElement("div", { className: "flex items-center gap-3" },
               logoUrl
                 ? React.createElement("img", { src: logoUrl, alt: "Logo", className: "h-10 w-auto object-contain" })
-                : React.createElement("div", { className: "w-10 h-10 rounded-xl bg-[#E8F04F] flex items-center justify-center text-[#0E1B2D] font-bold" }, appTitle.slice(0, 2).toUpperCase()),
+                : React.createElement("div", { className: "w-10 h-10 rounded-xl bg-[#E8F04F] flex items-center justify-center text-[#0E1B2D] font-bold flex-shrink-0" }, appTitle.slice(0, 2).toUpperCase()),
               React.createElement("div", { className: "min-w-0" },
                 React.createElement("p", { className: "text-white font-bold text-sm truncate" }, appTitle),
                 React.createElement("p", { className: "text-[#9CA3AF] text-xs" }, "Administration")
@@ -1140,7 +1133,7 @@
           React.createElement("nav", { className: "flex-1 p-4 space-y-1 overflow-y-auto" },
             React.createElement(NavItem, { section: 'home', icon: '🏠' }, "Tableau de bord"),
             React.createElement(NavItem, { section: 'brands', icon: '🏷️' }, "Marques"),
-            React.createElement(NavItem, { section: 'products', icon: '📦' }, "Produits"),
+            React.createElement(NavItem, { section: 'products', icon: '📦' }, "Produits & Données"),
             React.createElement(NavItem, { section: 'orders', icon: '🛒' }, "Commandes"),
             React.createElement(NavItem, { section: 'stats', icon: '📊' }, "Statistiques"),
             React.createElement(NavItem, { section: 'settings', icon: '⚙️' }, "Paramètres")
@@ -1158,15 +1151,20 @@
 
       const renderHeader = () =>
         React.createElement("header", { className: `h-16 flex-shrink-0 flex items-center justify-between px-6 border-b border-[${THEME.colors.border}] bg-[#0A1622] sticky top-0 z-30` },
-          React.createElement("div", { className: "flex items-center gap-3 lg:hidden" },
-            logoUrl
-              ? React.createElement("img", { src: logoUrl, alt: "Logo", className: "h-8" })
-              : React.createElement("span", { className: "text-[#E8F04F] font-bold" }, appTitle)
+          React.createElement("div", {
+            className: "flex items-center gap-3 lg:hidden cursor-pointer select-none",
+            onClick: handleLogoClick,
+            onMouseDown: startLongPress,
+            onMouseUp: cancelLongPress,
+            onMouseLeave: cancelLongPress
+          },
+            logoUrl ? React.createElement("img", { src: logoUrl, alt: "Logo", className: "h-8" })
+            : React.createElement("span", { className: "text-[#E8F04F] font-bold" }, appTitle)
           ),
           React.createElement("div", { className: "hidden lg:block" },
             React.createElement("h1", { className: "text-white font-semibold text-lg" },
               isAdmin
-                ? ({ home: 'Tableau de bord', brands: 'Marques', products: 'Produits', orders: 'Commandes', stats: 'Statistiques', settings: 'Paramètres' })[adminSection] || 'Admin'
+                ? ({ home: 'Tableau de bord', brands: 'Marques', products: 'Produits & Données', orders: 'Commandes', stats: 'Statistiques', settings: 'Paramètres' })[adminSection] || 'Admin'
                 : currentView === DICT.VIEW.DETAIL
                   ? selectedBrand ? selectedBrand.name : 'Produits'
                   : 'Catalogue'
@@ -1182,6 +1180,7 @@
               title: showPrices ? 'Masquer les prix' : 'Afficher les prix'
             }, "DZD"),
             isAdmin && React.createElement("span", { className: "px-3 py-1.5 text-xs font-medium uppercase rounded-lg bg-[#E8F04F] text-[#0E1B2D]" }, "Admin"),
+            isAdmin && React.createElement(Button, { variant: 'ghost', size: 'sm', onClick: logoutAdmin }, "Déconnexion"),
             !isAdmin && React.createElement(Button, { variant: 'secondary', size: 'sm', onClick: () => openPinModal('verify') }, "Espace admin")
           )
         );
@@ -1191,7 +1190,7 @@
           ? React.createElement("div", { className: "flex flex-col items-center justify-center py-24 text-center" },
               React.createElement("div", { className: "text-6xl mb-4" }, "🏷️"),
               React.createElement("p", { className: "text-[#9CA3AF] text-lg" }, "Aucune marque pour le moment"),
-              isAdmin && React.createElement(Button, { onClick: openAddBrand, className: "mt-4" }, "+ Ajouter une marque")
+              isAdmin && React.createElement(Button, { onClick: openAddBrand, className: "mt-4 !w-auto" }, "+ Ajouter une marque")
             )
           : React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-5" },
               brands.map(brand => React.createElement(BrandCard, { key: brand.id, brand, onClick: () => openBrand(brand) }))
@@ -1222,42 +1221,69 @@
             React.createElement(StatCard, { label: "Produits", value: totalProducts }),
             showPrices && React.createElement(StatCard, { label: "Revenu total", value: totalRevenue.toLocaleString() + ' DZD' })
           ),
-          React.createElement("div", { className: "grid grid-cols-1 md:grid-cols-3 gap-4" },
-            React.createElement("button", {
-              onClick: () => setAdminSection('brands'),
-              className: `p-6 bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl text-left hover:border-[${THEME.colors.primary}] transition group`
-            },
-              React.createElement("div", { className: "text-4xl mb-3" }, "🏷️"),
-              React.createElement("h3", { className: "text-white font-semibold" }, "Gérer les marques"),
-              React.createElement("p", { className: "text-[#9CA3AF] text-sm mt-1" }, "Ajouter, modifier, supprimer")
+          React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl p-6` },
+            React.createElement("h3", { className: "text-white font-semibold text-base mb-4" }, "Actions rapides"),
+            React.createElement("div", { className: "grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3" },
+              React.createElement(ActionButton, { icon: '➕', label: 'Ajouter une marque', onClick: openAddBrand }),
+              React.createElement(ActionButton, { icon: '➕', label: 'Ajouter un produit', onClick: openAddProductFromHome }),
+              React.createElement(ActionButton, { icon: '🏷️', label: 'Gérer les marques', onClick: () => setAdminSection('brands') }),
+              React.createElement(ActionButton, { icon: '📦', label: 'Gérer les produits', onClick: () => setAdminSection('products') }),
+              React.createElement(ActionButton, { icon: '📥', label: 'Importer / Exporter', onClick: () => setAdminSection('products') }),
+              React.createElement(ActionButton, { icon: '🛒', label: 'Commandes', onClick: () => setAdminSection('orders') }),
+              React.createElement(ActionButton, { icon: '📊', label: 'Statistiques', onClick: () => setAdminSection('stats') }),
+              React.createElement(ActionButton, { icon: '⚙️', label: 'Options avancées', onClick: () => setAdminSection('settings') })
+            )
+          ),
+          React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6" },
+            React.createElement(Card, { title: "Dernières commandes", subtitle: `${pendingOrders} en attente de traitement` },
+              orders.filter(o => o.status === 'received').slice(0, 5).length === 0
+                ? React.createElement("p", { className: `text-center text-[#9CA3AF] py-6 text-sm` }, "Aucune commande en attente")
+                : React.createElement("div", { className: "space-y-2" },
+                    orders.filter(o => o.status === 'received').slice(0, 5).map(o => React.createElement("div", {
+                      key: o.id, className: `flex justify-between items-center p-3 bg-[${THEME.colors.inputBg}] rounded-lg`
+                    },
+                      React.createElement("div", null,
+                        React.createElement("p", { className: "text-white text-sm font-medium" }, o.client.nom || 'Client'),
+                        React.createElement("p", { className: "text-[#9CA3AF] text-xs" }, formatOrderDate(o))
+                      ),
+                      showPrices && React.createElement("span", { className: "text-[#3DC59D] font-semibold text-sm" }, Number(o.total).toLocaleString(), " DZD")
+                    ))
+                  )
             ),
-            React.createElement("button", {
-              onClick: () => setAdminSection('products'),
-              className: `p-6 bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl text-left hover:border-[${THEME.colors.primary}] transition group`
-            },
-              React.createElement("div", { className: "text-4xl mb-3" }, "📦"),
-              React.createElement("h3", { className: "text-white font-semibold" }, "Gérer les produits"),
-              React.createElement("p", { className: "text-[#9CA3AF] text-sm mt-1" }, "Ajouter, importer, exporter")
-            ),
-            React.createElement("button", {
-              onClick: () => setAdminSection('orders'),
-              className: `p-6 bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl text-left hover:border-[${THEME.colors.primary}] transition group`
-            },
-              React.createElement("div", { className: "text-4xl mb-3" }, "🛒"),
-              React.createElement("h3", { className: "text-white font-semibold" }, "Commandes"),
-              React.createElement("p", { className: "text-[#9CA3AF] text-sm mt-1" }, `${pendingOrders} en attente de traitement`)
+            React.createElement(Card, { title: "Accès rapides", subtitle: "Aux options avancées" },
+              React.createElement("div", { className: "grid grid-cols-2 gap-2" },
+                React.createElement("button", {
+                  onClick: openManageAdmins,
+                  className: `p-3 bg-[${THEME.colors.inputBg}] rounded-lg text-sm text-white hover:border-[#E8F04F] border border-[${THEME.colors.border}] transition text-left`
+                }, "👥 Admins"),
+                React.createElement("button", {
+                  onClick: migrateOrderDates,
+                  className: `p-3 bg-[${THEME.colors.inputBg}] rounded-lg text-sm text-white hover:border-[#E8F04F] border border-[${THEME.colors.border}] transition text-left`
+                }, "🔄 Migrer dates"),
+                React.createElement("button", {
+                  onClick: () => setAdminSection('settings'),
+                  className: `p-3 bg-[${THEME.colors.inputBg}] rounded-lg text-sm text-white hover:border-[#E8F04F] border border-[${THEME.colors.border}] transition text-left`
+                }, "🖼️ Image bank"),
+                React.createElement("button", {
+                  onClick: testNtfy,
+                  className: `p-3 bg-[${THEME.colors.inputBg}] rounded-lg text-sm text-white hover:border-[#E8F04F] border border-[${THEME.colors.border}] transition text-left`
+                }, "🔔 Test ntfy")
+              )
             )
           )
         );
 
       const renderAdminBrands = () =>
         React.createElement("div", { className: "space-y-6" },
-          React.createElement("div", { className: "flex justify-between items-start" },
+          React.createElement("div", { className: "flex justify-between items-start gap-3 flex-wrap" },
             React.createElement("div", null,
               React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Marques"),
               React.createElement("p", { className: "text-[#9CA3AF] text-sm mt-1" }, `${brands.length} marque(s) au total`)
             ),
-            React.createElement(Button, { onClick: openAddBrand }, "+ Nouvelle marque")
+            React.createElement("div", { className: "flex gap-2" },
+              React.createElement(Button, { variant: 'ghost', onClick: () => setAdminSection('products') }, "Voir les produits"),
+              React.createElement(Button, { onClick: openAddBrand }, "+ Nouvelle marque")
+            )
           ),
           React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl overflow-hidden` },
             brands.length === 0
@@ -1279,7 +1305,11 @@
                       ),
                       React.createElement("td", { className: "py-3 px-6 text-white font-medium" }, b.name),
                       React.createElement("td", { className: "py-3 px-6 text-center text-[#3DC59D] font-semibold" }, (b.products || []).length),
-                      React.createElement("td", { className: "py-3 px-6 text-right" },
+                      React.createElement("td", { className: "py-3 px-6 text-right whitespace-nowrap" },
+                        React.createElement("button", {
+                          onClick: () => { setSelectedBrandForData(b.id); setAdminSection('products'); },
+                          className: `px-3 py-1.5 text-xs font-medium rounded-lg bg-[#1E2F44] text-white hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition mr-2`
+                        }, "Produits"),
                         React.createElement("button", {
                           onClick: () => openEditBrand(b),
                           className: `px-3 py-1.5 text-xs font-medium rounded-lg bg-[#1E2F44] text-[#E8F04F] hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition mr-2`
@@ -1297,7 +1327,7 @@
             React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-rose-500 rounded-2xl p-6 max-w-md w-full` },
               React.createElement("h3", { className: "text-white font-semibold text-lg mb-2" }, "Confirmer la suppression"),
               React.createElement("p", { className: "text-[#9CA3AF] text-sm mb-4" },
-                "Supprimer la marque ", React.createElement("strong", null, (brands.find(b => b.id === confirmDeleteBrandId) || {}).name), " et tous ses produits ?"
+                "Supprimer la marque ", React.createElement("strong", { className: "text-white" }, (brands.find(b => b.id === confirmDeleteBrandId) || {}).name), " et tous ses produits ?"
               ),
               React.createElement("div", { className: "flex gap-3 justify-end" },
                 React.createElement(Button, { variant: 'ghost', onClick: () => setConfirmDeleteBrandId(null), className: "!w-auto !px-4 !py-2" }, "Annuler"),
@@ -1311,31 +1341,36 @@
         const brand = brands.find(b => b.id === selectedBrandForData);
         const products = brand ? (brand.products || []) : [];
         return React.createElement("div", { className: "space-y-6" },
-          React.createElement("div", { className: "flex justify-between items-start" },
+          React.createElement("div", { className: "flex justify-between items-start gap-3 flex-wrap" },
             React.createElement("div", null,
-              React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Produits"),
-              React.createElement("p", { className: "text-[#9CA3AF] text-sm mt-1" }, "Gérez le catalogue par marque")
+              React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Produits & Données"),
+              React.createElement("p", { className: "text-[#9CA3AF] text-sm mt-1" }, "Gérez le catalogue, importez, exportez et associez des images")
             ),
             React.createElement(Button, { onClick: openAddProduct }, "+ Nouveau produit")
           ),
-          React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl p-5 flex flex-wrap gap-3 items-end` },
-            React.createElement("div", { className: "flex-1 min-w-[220px]" },
-              React.createElement("label", { className: "block text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-1" }, "Marque"),
-              React.createElement("select", {
-                value: selectedBrandForData,
-                onChange: e => setSelectedBrandForData(e.target.value),
-                className: `w-full px-4 py-2.5 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white focus:border-[#E8F04F] outline-none`
-              },
-                React.createElement("option", { value: "" }, "-- Sélectionner une marque --"),
-                brands.map(b => React.createElement("option", { key: b.id, value: b.id }, b.name))
+          React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl p-5` },
+            React.createElement("div", { className: "flex flex-wrap gap-3 items-end" },
+              React.createElement("div", { className: "flex-1 min-w-[220px]" },
+                React.createElement("label", { className: "block text-xs font-medium text-[#9CA3AF] uppercase tracking-wider mb-1" }, "Marque"),
+                React.createElement("select", {
+                  value: selectedBrandForData,
+                  onChange: e => setSelectedBrandForData(e.target.value),
+                  className: `w-full px-4 py-2.5 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white focus:border-[#E8F04F] outline-none`
+                },
+                  React.createElement("option", { value: "" }, "-- Toutes les marques (export uniquement) --"),
+                  brands.map(b => React.createElement("option", { key: b.id, value: b.id }, b.name))
+                )
+              ),
+              React.createElement("div", { className: "flex gap-2 flex-wrap" },
+                React.createElement(Button, { variant: 'secondary', size: 'sm', disabled: !selectedBrandForData, onClick: () => fileInputRef.current.click() }, "📥 Importer"),
+                React.createElement("input", { type: "file", ref: fileInputRef, accept: ".xlsx,.xls", onChange: handleImport, className: "hidden" }),
+                React.createElement(Button, { variant: 'secondary', size: 'sm', onClick: exportData }, "📤 Exporter"),
+                React.createElement(Button, { variant: 'secondary', size: 'sm', disabled: !selectedBrandForData, onClick: () => imageInputRef.current.click() }, "🖼️ Images en lot"),
+                React.createElement("input", { type: "file", ref: imageInputRef, accept: "image/*", multiple: true, onChange: handleAddImages, className: "hidden" })
               )
             ),
-            React.createElement("div", { className: "flex gap-2" },
-              React.createElement(Button, { variant: 'secondary', size: 'sm', disabled: !selectedBrandForData, onClick: () => fileInputRef.current.click() }, "Importer"),
-              React.createElement("input", { type: "file", ref: fileInputRef, accept: ".xlsx,.xls", onChange: handleImport, className: "hidden" }),
-              React.createElement(Button, { variant: 'secondary', size: 'sm', onClick: exportData }, "Exporter"),
-              React.createElement(Button, { variant: 'secondary', size: 'sm', disabled: !selectedBrandForData, onClick: () => imageInputRef.current.click() }, "Images en lot"),
-              React.createElement("input", { type: "file", ref: imageInputRef, accept: "image/*", multiple: true, onChange: handleAddImages, className: "hidden" })
+            React.createElement("p", { className: `text-xs text-[#9CA3AF] mt-3` },
+              "Import et images en lot nécessitent une marque sélectionnée. Export fonctionne avec ou sans marque."
             )
           ),
           React.createElement("div", { className: `bg-[${THEME.colors.cardBg}] border border-[${THEME.colors.border}] rounded-2xl overflow-hidden` },
@@ -1362,14 +1397,14 @@
                         ),
                         React.createElement("td", { className: "py-3 px-6 text-white font-medium" }, p.name),
                         React.createElement("td", { className: "py-3 px-6 text-center text-[#9CA3AF]" }, p.qty, " u."),
-                        showPrices && React.createElement("td", { className: "py-3 px-6 text-right text-[#3DC59D] font-semibold" }, Number(p.price).toLocaleString(), " DZD"),
+                        showPrices && React.createElement("td", { className: "py-3 px-6 text-right text-[#3DC59D] font-semibold whitespace-nowrap" }, Number(p.price).toLocaleString(), " DZD"),
                         React.createElement("td", { className: "py-3 px-6 text-center" },
                           React.createElement("button", {
                             onClick: () => toggleProductVisibility(brand.id, p.id),
                             className: `px-2.5 py-1 rounded-md text-xs font-medium ${p.hidden ? 'bg-gray-700 text-gray-300' : 'bg-[#3DC59D]/20 text-[#3DC59D]'}`
                           }, p.hidden ? "Masqué" : "Visible")
                         ),
-                        React.createElement("td", { className: "py-3 px-6 text-right" },
+                        React.createElement("td", { className: "py-3 px-6 text-right whitespace-nowrap" },
                           React.createElement("button", {
                             onClick: () => openEditProduct(brand.id, p),
                             className: `px-3 py-1.5 text-xs font-medium rounded-lg bg-[#1E2F44] text-[#E8F04F] hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition mr-2`
@@ -1436,7 +1471,7 @@
                       React.createElement("th", { className: "py-3 px-6 font-medium" }, "Téléphone"),
                       React.createElement("th", { className: "py-3 px-6 font-medium text-center" }, "Articles"),
                       showPrices && React.createElement("th", { className: "py-3 px-6 font-medium text-right" }, "Total"),
-                      React.createElement("th", { className: "py-3 px-6 font-medium text-right" }, "Actions")
+                      React.createElement("th", { className: "py-3 px-6 font-medium text-right" }, "Détails")
                     )
                   ),
                   React.createElement("tbody", null,
@@ -1451,9 +1486,9 @@
                           React.createElement("td", { className: "py-3 px-6 text-white font-medium" }, order.client.nom || '—'),
                           React.createElement("td", { className: "py-3 px-6 text-[#9CA3AF] text-sm" }, order.client.telephone || '—'),
                           React.createElement("td", { className: "py-3 px-6 text-center text-[#9CA3AF]" }, order.items.length),
-                          showPrices && React.createElement("td", { className: "py-3 px-6 text-right text-[#3DC59D] font-semibold" }, Number(order.total).toLocaleString(), " DZD"),
+                          showPrices && React.createElement("td", { className: "py-3 px-6 text-right text-[#3DC59D] font-semibold whitespace-nowrap" }, Number(order.total).toLocaleString(), " DZD"),
                           React.createElement("td", { className: "py-3 px-6 text-right" },
-                            React.createElement("span", { className: `text-xs ${isExpanded ? 'rotate-180' : ''} inline-block transition` }, "▼")
+                            React.createElement("span", { className: `text-xs inline-block transition ${isExpanded ? 'rotate-180' : ''}` }, "▼")
                           )
                         ),
                         isExpanded && React.createElement("tr", null,
@@ -1485,7 +1520,7 @@
                                     )
                                   )
                                 ),
-                                React.createElement("div", { className: "flex gap-2 justify-end mt-4" },
+                                React.createElement("div", { className: "flex gap-2 justify-end mt-4 flex-wrap" },
                                   orderTab === 'received' && React.createElement(React.Fragment, null,
                                     React.createElement(Button, { size: 'sm', onClick: (e) => { e.stopPropagation(); handleProcess(order.id); }, className: "!w-auto" }, "Traiter"),
                                     React.createElement(Button, { size: 'sm', variant: 'danger', onClick: (e) => { e.stopPropagation(); handleCancelOrder(order.id); }, className: "!w-auto" }, "Annuler")
@@ -1494,7 +1529,8 @@
                                     React.createElement(Button, { size: 'sm', onClick: (e) => { e.stopPropagation(); handleDeliver(order.id); }, className: "!w-auto" }, "Marquer livrée"),
                                     React.createElement(Button, { size: 'sm', variant: 'ghost', onClick: (e) => { e.stopPropagation(); handleBackToReceived(order.id); }, className: "!w-auto" }, "← Reçues"),
                                     React.createElement(Button, { size: 'sm', variant: 'danger', onClick: (e) => { e.stopPropagation(); handleCancelOrder(order.id); }, className: "!w-auto" }, "Annuler")
-                                  )
+                                  ),
+                                  orderTab === 'delivered' && React.createElement(Button, { size: 'sm', variant: 'ghost', onClick: (e) => { e.stopPropagation(); handleBackToReceived(order.id); }, className: "!w-auto" }, "← Reçues")
                                 )
                               )
                             )
@@ -1549,7 +1585,7 @@
                         const pct = w.count / maxWeekCount;
                         return React.createElement("div", {
                           key: i,
-                          style: { flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', position: 'relative' },
+                          style: { flex: 1, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center' },
                           title: `${w.label} : ${w.count} commande(s)`
                         },
                           w.count > 0 && weeklyStats.length <= 20 && React.createElement("span", {
@@ -1583,9 +1619,9 @@
                         return React.createElement("div", { key: c.key, className: "flex items-center gap-3" },
                           React.createElement("span", { className: `w-6 text-xs font-bold ${i === 0 ? 'text-[#E8F04F]' : 'text-[#9CA3AF]'}` }, i + 1),
                           React.createElement("div", { className: "flex-1 min-w-0" },
-                            React.createElement("div", { className: "flex justify-between mb-1" },
+                            React.createElement("div", { className: "flex justify-between mb-1 gap-2" },
                               React.createElement("span", { className: "text-sm text-white truncate" }, c.name),
-                              React.createElement("span", { className: `text-sm font-bold ${i === 0 ? 'text-[#E8F04F]' : 'text-[#3DC59D]'}` }, c.count)
+                              React.createElement("span", { className: `text-sm font-bold flex-shrink-0 ${i === 0 ? 'text-[#E8F04F]' : 'text-[#3DC59D]'}` }, c.count)
                             ),
                             React.createElement("div", { className: "h-2 bg-[#0E1B2D] rounded-full overflow-hidden" },
                               React.createElement("div", {
@@ -1609,51 +1645,18 @@
       const renderAdminSettings = () =>
         React.createElement("div", { className: "space-y-6" },
           React.createElement("div", null,
-            React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Paramètres"),
-            React.createElement("p", { className: "text-[#9CA3AF] text-sm mt-1" }, "Configuration de l'application")
+            React.createElement("h2", { className: "text-2xl font-bold text-white" }, "Paramètres & Options avancées"),
+            React.createElement("p", { className: "text-[#9CA3AF] text-sm mt-1" }, "Configuration complète de l'application")
           ),
           React.createElement("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-6" },
-            React.createElement(Card, { title: "Logo", subtitle: "Image affichée dans l'en-tête" },
-              React.createElement("div", { className: "space-y-4" },
-                logoUrl && React.createElement("div", { className: `bg-[#0E1B2D] rounded-xl p-4 flex items-center justify-center` },
-                  React.createElement("img", { src: logoUrl, className: "max-h-20 object-contain" })
-                ),
-                React.createElement("button", {
-                  onClick: () => logoInputRef.current.click(),
-                  className: `w-full py-2.5 border-2 border-dashed border-[${THEME.colors.border}] rounded-xl text-sm text-[#9CA3AF] hover:border-[#E8F04F] hover:text-[#E8F04F] transition`
-                }, "📁 Uploader un logo"),
-                React.createElement("input", { type: "file", ref: logoInputRef, accept: "image/*", onChange: handleLogoUpload, className: "hidden" }),
-                React.createElement("div", { className: "flex gap-2" },
-                  React.createElement("input", {
-                    type: "text", placeholder: "URL du logo",
-                    value: logoUrlInput, onChange: e => setLogoUrlInput(e.target.value),
-                    className: `flex-1 px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm focus:border-[#E8F04F] outline-none`
-                  }),
-                  React.createElement("button", {
-                    onClick: handleLogoUrlSubmit,
-                    className: "px-4 py-2 bg-[#E8F04F] text-[#0E1B2D] rounded-lg text-sm font-medium hover:brightness-110"
-                  }, "OK")
-                )
-              )
-            ),
-            React.createElement(Card, { title: "Titre", subtitle: "Nom affiché dans l'application" },
-              React.createElement("div", { className: "space-y-3" },
-                React.createElement("input", {
-                  type: "text", value: titleInput,
-                  onChange: e => setTitleInput(e.target.value),
-                  className: `w-full px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white focus:border-[#E8F04F] outline-none`
-                }),
-                React.createElement(Button, { size: 'sm', onClick: saveTitle, className: "!w-auto" }, "Enregistrer")
-              )
-            ),
-            React.createElement(Card, { title: "Fournisseur d'images", subtitle: "Cloudinary ou imgbb" },
+            React.createElement(Card, { title: "🖼️ Banque d'images", subtitle: "Cloudinary ou imgbb (utilisé pour toutes les images)" },
               React.createElement("div", { className: "space-y-4" },
                 React.createElement("div", { className: "grid grid-cols-2 gap-2" },
                   ['cloudinary', 'imgbb'].map(p => React.createElement("button", {
                     key: p,
                     onClick: () => setImageProvider(p),
                     className: `py-2 rounded-lg text-sm font-medium transition ${
-                      imageProvider === p ? 'bg-[#E8F04F] text-[#0E1B2D]' : 'bg-[#0E1B2D] text-[#9CA3AF] border border-[#3A4A5F]'
+                      imageProvider === p ? 'bg-[#E8F04F] text-[#0E1B2D]' : 'bg-[#0E1B2D] text-[#9CA3AF] border border-[#3A4A5F] hover:text-white'
                     }`
                   }, p === 'cloudinary' ? 'Cloudinary' : 'imgbb'))
                 ),
@@ -1681,24 +1684,81 @@
                     onChange: e => setImgbbApiKey(e.target.value),
                     className: `w-full px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm focus:border-[#E8F04F] outline-none`
                   })
+                ),
+                React.createElement("p", { className: "text-xs text-[#3DC59D]" },
+                  `Fournisseur actif : ${imageProvider === 'cloudinary' ? 'Cloudinary' : 'imgbb'}`
                 )
               )
             ),
-            React.createElement(Card, { title: "Notifications ntfy", subtitle: "Topic pour les alertes commandes" },
+            React.createElement(Card, { title: "🔔 Notifications ntfy", subtitle: "Topic pour les alertes de nouvelles commandes" },
               React.createElement("div", { className: "space-y-3" },
                 React.createElement("input", {
                   type: "text", value: ntfyTopic,
                   onChange: e => setNtfyTopic(e.target.value.trim()),
                   className: `w-full px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white focus:border-[#E8F04F] outline-none`
                 }),
-                React.createElement(Button, { size: 'sm', variant: 'secondary', onClick: testNtfy, className: "!w-auto" }, "Tester")
+                React.createElement("div", { className: "flex gap-2" },
+                  React.createElement(Button, { size: 'sm', variant: 'secondary', onClick: testNtfy, className: "!w-auto" }, "🧪 Tester"),
+                  React.createElement("a", {
+                    href: `https://ntfy.sh/${ntfyTopic || 'ldholdingnotif'}`,
+                    target: "_blank", rel: "noopener noreferrer",
+                    className: `px-4 py-2 text-sm border-2 border-[${THEME.colors.primary}] text-[${THEME.colors.primary}] rounded-xl hover:bg-[${THEME.colors.primary}] hover:text-[${THEME.colors.background}] transition inline-block`
+                  }, "Ouvrir le topic")
+                )
               )
             ),
-            React.createElement(Card, { title: "Administrateurs", subtitle: "Gérer les accès administrateur" },
-              React.createElement(Button, { variant: 'secondary', onClick: openManageAdmins }, "Gérer les administrateurs")
+            React.createElement(Card, { title: "🖼️ Logo", subtitle: "Affiché dans l'en-tête et la sidebar" },
+              React.createElement("div", { className: "space-y-4" },
+                logoUrl && React.createElement("div", { className: `bg-[#0E1B2D] rounded-xl p-4 flex items-center justify-center` },
+                  React.createElement("img", { src: logoUrl, className: "max-h-20 object-contain" })
+                ),
+                React.createElement("button", {
+                  onClick: () => logoInputRef.current.click(),
+                  className: `w-full py-2.5 border-2 border-dashed border-[${THEME.colors.border}] rounded-xl text-sm text-[#9CA3AF] hover:border-[#E8F04F] hover:text-[#E8F04F] transition`
+                }, "📁 Uploader un logo"),
+                React.createElement("input", { type: "file", ref: logoInputRef, accept: "image/*", onChange: handleLogoUpload, className: "hidden" }),
+                React.createElement("div", { className: "flex gap-2" },
+                  React.createElement("input", {
+                    type: "text", placeholder: "URL du logo",
+                    value: logoUrlInput, onChange: e => setLogoUrlInput(e.target.value),
+                    className: `flex-1 px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white text-sm focus:border-[#E8F04F] outline-none`
+                  }),
+                  React.createElement("button", {
+                    onClick: handleLogoUrlSubmit,
+                    className: "px-4 py-2 bg-[#E8F04F] text-[#0E1B2D] rounded-lg text-sm font-medium hover:brightness-110"
+                  }, "OK")
+                )
+              )
             ),
-            React.createElement(Card, { title: "Maintenance", subtitle: "Actions techniques" },
-              React.createElement(Button, { variant: 'secondary', onClick: migrateOrderDates }, "Migrer les dates des commandes")
+            React.createElement(Card, { title: "📝 Titre de l'application", subtitle: "Nom affiché dans l'interface" },
+              React.createElement("div", { className: "space-y-3" },
+                React.createElement("div", { className: `p-3 bg-[#0E1B2D] rounded-lg` },
+                  React.createElement("p", { className: "text-xs text-[#9CA3AF] mb-1" }, "Titre actuel :"),
+                  React.createElement("p", { className: "text-white font-semibold" }, appTitle)
+                ),
+                React.createElement("input", {
+                  type: "text", value: titleInput,
+                  onChange: e => setTitleInput(e.target.value),
+                  className: `w-full px-3 py-2 bg-[#0E1B2D] rounded-lg border border-[${THEME.colors.border}] text-white focus:border-[#E8F04F] outline-none`
+                }),
+                React.createElement(Button, { size: 'sm', onClick: saveTitle, className: "!w-auto" }, "Enregistrer")
+              )
+            ),
+            React.createElement(Card, { title: "👥 Administrateurs", subtitle: "Gérer les accès administrateur" },
+              React.createElement("div", { className: "space-y-3" },
+                React.createElement(Button, { variant: 'secondary', onClick: openManageAdmins }, "Gérer les administrateurs"),
+                React.createElement("p", { className: `text-xs text-[#9CA3AF]` },
+                  "Code de suppression : 1747"
+                )
+              )
+            ),
+            React.createElement(Card, { title: "🔧 Maintenance", subtitle: "Actions techniques" },
+              React.createElement("div", { className: "space-y-2" },
+                React.createElement(Button, { variant: 'secondary', size: 'sm', onClick: migrateOrderDates }, "Migrer les dates des commandes"),
+                React.createElement("p", { className: `text-xs text-[#9CA3AF]` },
+                  "Convertit les anciennes dates en timestamp pour un tri fiable."
+                )
+              )
             )
           )
         );
@@ -1818,18 +1878,20 @@
           onClose: () => setModals(p => ({ ...p, brandSelect: false })),
           size: 'md'
         },
-          React.createElement("div", { className: "grid grid-cols-2 gap-3 mb-4" },
-            brands.map(b => React.createElement("button", {
-              key: b.id,
-              onClick: () => {
-                setNewProduct({ ...newProduct, brandId: b.id });
-                setModals(p => ({ ...p, brandSelect: false, product: true }));
-              },
-              className: `p-4 bg-[${THEME.colors.inputBg}] rounded-xl text-white hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition text-left font-medium border border-[${THEME.colors.border}]`
-            }, b.name))
-          )
+          brands.length === 0
+            ? React.createElement("p", { className: `text-center text-[#9CA3AF] py-6` }, "Aucune marque. Créez-en une d'abord.")
+            : React.createElement("div", { className: "grid grid-cols-2 gap-3 mb-4" },
+                brands.map(b => React.createElement("button", {
+                  key: b.id,
+                  onClick: () => {
+                    setNewProduct({ ...newProduct, brandId: b.id });
+                    setModals(p => ({ ...p, brandSelect: false, product: true }));
+                  },
+                  className: `p-4 bg-[${THEME.colors.inputBg}] rounded-xl text-white hover:bg-[#E8F04F] hover:text-[#0E1B2D] transition text-left font-medium border border-[${THEME.colors.border}]`
+                }, b.name))
+              )
         ),
-        // Product detail modal
+        // Product detail modal (public + admin preview)
         React.createElement(Modal, {
           isOpen: modals.productDetail,
           title: selectedProduct ? selectedProduct.name : "",
@@ -1894,15 +1956,18 @@
                 placeholder: "8 chiffres minimum"
               })
             ),
-            pinMode === 'create' && React.createElement("div", null,
-              React.createElement("label", { className: `block text-xs font-medium text-[${THEME.colors.textMuted}] uppercase tracking-wider mb-1` }, "Confirmation"),
-              React.createElement("input", {
-                type: "password", inputMode: "numeric",
-                className: `w-full px-4 py-2.5 bg-[${THEME.colors.inputBg}] rounded-xl border border-[${THEME.colors.border}] text-white focus:border-[#E8F04F] outline-none`,
-                value: pinConfirm,
-                onChange: e => setPinConfirm(e.target.value.replace(/\D/g, '')),
-                placeholder: "Confirmation"
-              })
+            pinMode === 'create' && React.createElement(React.Fragment, null,
+              React.createElement("div", null,
+                React.createElement("label", { className: `block text-xs font-medium text-[${THEME.colors.textMuted}] uppercase tracking-wider mb-1` }, "Confirmation"),
+                React.createElement("input", {
+                  type: "password", inputMode: "numeric",
+                  className: `w-full px-4 py-2.5 bg-[${THEME.colors.inputBg}] rounded-xl border border-[${THEME.colors.border}] text-white focus:border-[#E8F04F] outline-none`,
+                  value: pinConfirm,
+                  onChange: e => setPinConfirm(e.target.value.replace(/\D/g, '')),
+                  placeholder: "Confirmation"
+                })
+              ),
+              React.createElement("p", { className: "text-xs text-[#3DC59D]" }, "Le premier admin s'appellera : MEKEIRISHDEV")
             ),
             React.createElement("div", { className: "flex gap-3 justify-end pt-2" },
               React.createElement(Button, { variant: 'ghost', onClick: () => setShowPinModal(false), className: "!w-auto" }, "Annuler"),
@@ -1959,7 +2024,7 @@
             )
           )
         ),
-        // Delete confirm modal
+        // Delete admin confirm modal
         React.createElement(Modal, {
           isOpen: showDeleteConfirmModal,
           title: "Confirmer la suppression",
@@ -1968,6 +2033,7 @@
         },
           React.createElement("div", { className: "space-y-4" },
             React.createElement("p", { className: `text-[${THEME.colors.text}] text-sm` }, `Supprimer "${deleteTarget?.name}" ?`),
+            React.createElement("p", { className: `text-xs text-[#9CA3AF]` }, "Entrez le code de suppression (1747) pour confirmer."),
             React.createElement("input", {
               type: "password",
               className: `w-full px-4 py-2.5 bg-[${THEME.colors.inputBg}] rounded-xl border border-[${THEME.colors.border}] text-white focus:border-[#E8F04F] outline-none`,
@@ -2094,7 +2160,7 @@
           ),
           React.createElement(Button, {
             onClick: () => setModals(p => ({ ...p, cart: true })),
-            className: `fixed bottom-6 right-6 !w-auto !h-16 !px-6 !rounded-full shadow-2xl z-30 ${cart.length === 0 ? 'opacity-90' : ''}`,
+            className: `fixed bottom-6 right-6 !w-auto !h-16 !px-6 !rounded-full shadow-2xl z-30`,
             size: 'lg'
           },
             React.createElement("span", { className: "text-2xl" }, "🛒"),
@@ -2132,12 +2198,5 @@
     window.reactRoot = window.reactRoot || ReactDOM.createRoot(document.getElementById('root'));
     window.reactRoot.render(React.createElement(App, null));
   </script>
-<script>
-if ('serviceWorker' in navigator) {
-window.addEventListener('load',()=>{
-navigator.serviceWorker.register('./sw.js').catch(err=>console.error(err));
-});
-}
-</script>
 </body>
 </html>
